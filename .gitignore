@@ -1,0 +1,25 @@
+# Entorno virtual
+.venv/
+
+# Cache y archivos generados por Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Modelos, checkpoints y salidas locales
+*.pt
+*.pth
+*.ckpt
+outputs/
+
+# Configuracion local y secretos
+.env
+.env.*
+!.env.example
+
+# Configuracion del editor y del sistema operativo
+.vscode/
+.DS_Store
+Thumbs.db
