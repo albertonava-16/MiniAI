@@ -1,0 +1,723 @@
+MiniAI Lab — Plan de Trabajo
+
+Objetivo general
+Construir una IA pequeña desde cero para entender técnicamente cómo funcionan las redes neuronales, el entrenamiento, los Transformers, la generación de texto, la inferencia, RAG, herramientas y MCP. El proyecto busca cubrir tanto la capa matemática del modelo como la capa de software e integración.
+
+Duración estimada total
+42–56 horas
+
+Metodología
+- Avanzar por fases.
+- No usar abstracciones avanzadas antes de entender qué hacen por debajo.
+- Construir primero versiones simples y educativas.
+- Medir resultados en cada fase.
+- Mantener todo versionado en Git.
+- Documentar decisiones y aprendizajes.
+- Priorizar seguridad del hardware y uso razonable de GPU.
+
+Arquitectura objetivo aproximada
+
+Usuario
+  ↓
+Interfaz / Chat
+  ↓
+FastAPI
+  ↓
+MiniAI
+  ↓
+Transformer
+  ↓
+PyTorch / CUDA
+  ↓
+RTX 5050
+
+Y después:
+
+MiniAI
+  ↓
+RAG
+  ↓
+Tools
+  ↓
+MCP
+  ↓
+APIs / Files / DB / servicios externos
+
+
+============================================================
+FASE 0 — Preparar el laboratorio
+Estado: COMPLETADA
+Estimado: 2–3 horas
+============================================================
+
+Objetivo
+Dejar listo un entorno reproducible para desarrollar, entrenar y probar MiniAI.
+
+Tareas
+- Crear repositorio MiniAI.
+- Crear entorno virtual de Python.
+- Verificar Python y pip.
+- Instalar PyTorch.
+- Instalar NumPy y Matplotlib.
+- Verificar soporte CUDA.
+- Verificar arquitectura de GPU.
+- Confirmar que PyTorch detecta la RTX 5050.
+- Ejecutar una operación tensorial en GPU.
+- Abrir proyecto en VS Code.
+- Preparar estructura básica del repositorio.
+
+Estructura inicial recomendada
+
+MiniAI/
+├── datasets/
+├── models/
+├── notebooks/
+├── src/
+├── .venv/
+├── .gitignore
+└── README.md
+
+Checkpoint de salida
+- Python operativo.
+- Entorno virtual activo.
+- Git funcional.
+- PyTorch instalado.
+- CUDA disponible.
+- RTX 5050 visible desde PyTorch.
+- Primera operación ejecutada en cuda:0.
+
+Conceptos clave
+- Entorno virtual.
+- Dependencias.
+- GPU vs CPU.
+- CUDA.
+- Tensores.
+- VRAM.
+
+Resultado esperado
+Laboratorio listo para trabajar con IA localmente.
+
+
+============================================================
+FASE 1 — Crear una neurona artificial desde cero
+Estimado: 3–4 horas
+============================================================
+
+Objetivo
+Entender qué es realmente una neurona artificial y cómo aprende modificando pesos.
+
+Tareas
+- Crear entradas numéricas simples.
+- Definir pesos.
+- Definir bias.
+- Calcular suma ponderada.
+- Aplicar una función de activación.
+- Generar una predicción.
+- Definir una función de pérdida simple.
+- Calcular cómo cambia el error.
+- Ajustar pesos manualmente.
+- Introducir derivadas y gradientes de manera sencilla.
+- Programar el ciclo de aprendizaje sin PyTorch.
+
+Ejemplo conceptual
+
+inputs
+  ↓
+weights
+  ↓
+weighted sum
+  ↓
+bias
+  ↓
+activation
+  ↓
+prediction
+  ↓
+loss
+  ↓
+gradient
+  ↓
+update weights
+
+Experimento sugerido
+Aprender una función lógica sencilla, por ejemplo AND:
+
+0,0 → 0
+0,1 → 0
+1,0 → 0
+1,1 → 1
+
+Conceptos clave
+- Neurona artificial.
+- Peso.
+- Bias.
+- Activación.
+- Error.
+- Gradiente.
+- Learning rate.
+
+Checkpoint de salida
+La neurona debe producir mejores respuestas después del entrenamiento.
+
+Resultado esperado
+Primera “IA” que aprende algo sin que programemos explícitamente la respuesta correcta en forma de reglas.
+
+
+============================================================
+FASE 2 — Crear una red neuronal desde cero
+Estimado: 4–5 horas
+============================================================
+
+Objetivo
+Pasar de una neurona a varias capas conectadas y entender el flujo completo del aprendizaje.
+
+Tareas
+- Crear capa de entrada.
+- Crear una capa oculta.
+- Crear capa de salida.
+- Implementar forward propagation.
+- Implementar función de pérdida.
+- Introducir backpropagation.
+- Ajustar pesos de varias neuronas.
+- Entrenar por múltiples epochs.
+- Graficar la pérdida.
+- Comparar distintos learning rates.
+
+Arquitectura conceptual
+
+Input
+  ↓
+Hidden Layer
+  ↓
+Output
+
+Conceptos clave
+- Layer.
+- Forward pass.
+- Backward pass.
+- Epoch.
+- Batch.
+- Overfitting.
+- Convergencia.
+
+Checkpoint de salida
+La red debe resolver un problema no trivial y mostrar reducción consistente del loss.
+
+Resultado esperado
+Comprender el flujo completo de aprendizaje de una red neuronal.
+
+
+============================================================
+FASE 3 — PyTorch y entrenamiento con GPU
+Estimado: 3–4 horas
+============================================================
+
+Objetivo
+Traducir lo que hicimos manualmente a herramientas reales de Machine Learning.
+
+Tareas
+- Introducir torch.Tensor.
+- Comparar NumPy vs Tensor.
+- Ejecutar operaciones en CPU.
+- Mover tensores a GPU.
+- Crear un modelo con torch.nn.
+- Usar autograd.
+- Ejecutar loss.backward().
+- Usar un optimizer.
+- Entrenar en GPU.
+- Medir uso de VRAM.
+- Observar tiempos CPU vs GPU.
+
+Conceptos clave
+- Tensor.
+- Autograd.
+- Optimizer.
+- CUDA.
+- device.
+- VRAM.
+- Batch size.
+
+Checkpoint de salida
+Una red neuronal debe entrenarse correctamente en la RTX 5050.
+
+Resultado esperado
+Entender qué automatiza PyTorch y qué ocurre detrás de loss.backward() y optimizer.step().
+
+
+============================================================
+FASE 4 — Tokenización y embeddings
+Estimado: 4–5 horas
+============================================================
+
+Objetivo
+Pasar de números genéricos a lenguaje.
+
+Tareas
+- Crear corpus pequeño de texto.
+- Construir vocabulario.
+- Crear tokenizer sencillo.
+- Convertir texto a IDs.
+- Convertir IDs a texto.
+- Introducir token especial si es necesario.
+- Crear embeddings.
+- Representar tokens como vectores.
+- Preparar secuencias de contexto.
+- Crear pares input/target.
+
+Ejemplo
+
+"hola mundo"
+
+hola → 17
+mundo → 42
+
+17
+ ↓
+embedding
+ ↓
+[0.28, -0.91, 0.37, ...]
+
+Conceptos clave
+- Token.
+- Vocabulary.
+- Token ID.
+- Embedding.
+- Context window.
+- Sequence.
+- Next-token prediction.
+
+Checkpoint de salida
+Podemos convertir texto a tokens, embeddings y targets de entrenamiento.
+
+Resultado esperado
+Primer pipeline real de procesamiento de lenguaje.
+
+
+============================================================
+FASE 5 — Self-Attention
+Estimado: 5–6 horas
+============================================================
+
+Objetivo
+Construir el mecanismo central de los Transformers.
+
+Tareas
+- Introducir Query.
+- Introducir Key.
+- Introducir Value.
+- Implementar producto QK^T.
+- Aplicar escalamiento.
+- Aplicar softmax.
+- Multiplicar por V.
+- Visualizar pesos de atención.
+- Introducir masking causal.
+- Implementar una cabeza de atención.
+- Evolucionar a Multi-Head Attention.
+
+Ecuación principal
+
+Attention(Q,K,V) =
+softmax(QK^T / sqrt(d)) V
+
+Conceptos clave
+- Query.
+- Key.
+- Value.
+- Attention score.
+- Softmax.
+- Causal masking.
+- Attention head.
+- Multi-head attention.
+
+Checkpoint de salida
+Podemos inspeccionar cómo un token asigna importancia a otros tokens.
+
+Resultado esperado
+Comprender realmente qué hace “attention” y por qué es tan importante.
+
+
+============================================================
+FASE 6 — Construir nuestro Transformer
+Estimado: 6–8 horas
+============================================================
+
+Objetivo
+Ensamblar las piezas anteriores en un modelo generativo tipo GPT pequeño.
+
+Tareas
+- Crear token embeddings.
+- Añadir información posicional.
+- Crear bloque Transformer.
+- Implementar self-attention.
+- Implementar MLP.
+- Añadir residual connections.
+- Añadir normalización.
+- Apilar múltiples bloques.
+- Crear capa de salida.
+- Generar logits.
+- Convertir logits en probabilidades.
+- Implementar generación autoregresiva.
+
+Arquitectura conceptual
+
+Tokens
+  ↓
+Embeddings
+  ↓
+Positional Information
+  ↓
+Transformer Block
+  ↓
+Transformer Block
+  ↓
+Linear
+  ↓
+Logits
+  ↓
+Next Token
+
+Configuración inicial sugerida
+- Contexto: 128 tokens.
+- Embedding: 128–256.
+- Heads: 4.
+- Layers: 4.
+- Parámetros: unos pocos millones.
+
+Conceptos clave
+- Transformer block.
+- Residual connection.
+- Layer normalization.
+- MLP.
+- Logits.
+- Autoregressive generation.
+
+Checkpoint de salida
+El modelo debe aceptar tokens y producir distribución sobre el siguiente token.
+
+Resultado esperado
+Primer MiniGPT construido por nosotros.
+
+
+============================================================
+FASE 7 — Entrenar MiniAI
+Estimado: 4–6 horas
+============================================================
+
+Objetivo
+Entrenar el Transformer y observar cómo pasa de ruido a patrones de lenguaje.
+
+Tareas
+- Elegir corpus.
+- Preparar dataset.
+- Dividir train/validation.
+- Configurar hiperparámetros.
+- Entrenar por steps.
+- Registrar loss.
+- Guardar checkpoints.
+- Probar generaciones periódicas.
+- Detectar overfitting.
+- Ajustar batch size.
+- Ajustar learning rate.
+- Ajustar context length.
+- Medir temperatura y VRAM.
+
+Ejemplo de evolución
+
+Step 0
+"casa perro java función la de"
+
+Step 5000
+"Java es un lenguaje de..."
+
+Conceptos clave
+- Training loop.
+- Validation loss.
+- Checkpoint.
+- Hyperparameter.
+- Overfitting.
+- Sampling.
+- Temperature.
+
+Checkpoint de salida
+El modelo genera texto con estructura reconocible.
+
+Resultado esperado
+Nuestro propio modelo generativo entrenado localmente.
+
+
+============================================================
+FASE 8 — Convertir MiniAI en servicio
+Estimado: 3–4 horas
+============================================================
+
+Objetivo
+Exponer el modelo como servicio para usarlo desde otras aplicaciones.
+
+Tareas
+- Crear API con FastAPI.
+- Crear endpoint POST /chat.
+- Cargar modelo al iniciar.
+- Recibir prompt.
+- Generar respuesta.
+- Devolver JSON.
+- Añadir logs.
+- Manejar errores.
+- Crear interfaz web sencilla.
+- Probar acceso desde otro dispositivo en LAN.
+
+Arquitectura
+
+Cliente
+  ↓
+POST /chat
+  ↓
+FastAPI
+  ↓
+MiniAI
+  ↓
+Respuesta
+
+Conceptos clave
+- API.
+- Inference server.
+- Request/response.
+- Serialización.
+- Latencia.
+- Concurrencia.
+
+Checkpoint de salida
+Podemos hablar con MiniAI desde navegador o cliente HTTP.
+
+Resultado esperado
+MiniAI deja de ser un script y se convierte en un servicio.
+
+
+============================================================
+FASE 9 — RAG y Tools
+Estimado: 4–5 horas
+============================================================
+
+Objetivo
+Separar conocimiento del modelo, recuperación de información y capacidad de actuar.
+
+Tareas
+- Crear embeddings para documentos.
+- Indexar documentos.
+- Buscar contexto relevante.
+- Inyectar contexto en prompts.
+- Implementar RAG.
+- Crear una herramienta sencilla.
+- Permitir que el sistema invoque una función.
+- Registrar llamadas a tools.
+- Validar argumentos.
+- Aplicar límites de seguridad.
+
+Arquitectura
+
+MiniAI
+  ├── RAG → documentos
+  └── Tools → funciones / APIs
+
+Conceptos clave
+- Retrieval.
+- Vector search.
+- Embeddings.
+- Context injection.
+- Tool calling.
+- Structured output.
+
+Checkpoint de salida
+MiniAI puede responder usando información externa y ejecutar una herramienta controlada.
+
+Resultado esperado
+Distinguir claramente entre:
+- lo que el modelo aprendió,
+- lo que recupera,
+- y lo que puede ejecutar.
+
+
+============================================================
+FASE 10 — MCP y arquitectura distribuida
+Estimado: 4–6 horas
+============================================================
+
+Objetivo
+Integrar MCP y distribuir componentes entre las dos laptops.
+
+Arquitectura objetivo
+
+LOQ
+- MiniAI
+- PyTorch
+- CUDA
+- RTX 5050
+- Inferencia
+
+IdeaPad
+- FastAPI
+- MCP Server
+- Files
+- DB
+- APIs
+- Servicios auxiliares
+
+Tareas
+- Crear MCP Server.
+- Definir tools.
+- Definir resources.
+- Conectar MCP client.
+- Probar invocación de tools.
+- Añadir autenticación.
+- Añadir autorización.
+- Añadir timeouts.
+- Añadir logs.
+- Añadir límites de acceso.
+- Probar comunicación entre laptops por LAN.
+- Documentar arquitectura final.
+
+Conceptos clave
+- MCP.
+- Client/server.
+- Tools.
+- Resources.
+- Permissions.
+- Sandboxing.
+- Observabilidad.
+- Human-in-the-loop.
+
+Checkpoint de salida
+MiniAI puede consumir herramientas externas mediante MCP de forma controlada.
+
+Resultado esperado
+Sistema completo de laboratorio:
+
+Usuario
+  ↓
+Chat / UI
+  ↓
+API
+  ↓
+MiniAI
+  ↓
+Transformer
+  ↓
+GPU
+  ↓
+RAG / Tools
+  ↓
+MCP
+  ↓
+Servicios externos
+
+
+============================================================
+FASE 11 — Consolidación y documentación
+Estimado: 2–4 horas
+============================================================
+
+Objetivo
+Cerrar el proyecto como un proyecto técnico presentable y reusable.
+
+Tareas
+- Limpiar repositorio.
+- Crear README completo.
+- Añadir diagrama de arquitectura.
+- Documentar instalación.
+- Documentar entrenamiento.
+- Documentar decisiones técnicas.
+- Guardar métricas.
+- Guardar capturas o ejemplos de generación.
+- Añadir conclusiones.
+- Crear roadmap de mejoras.
+
+Entregables finales
+- Código fuente.
+- Modelo entrenado.
+- Checkpoints.
+- Dataset usado.
+- API funcional.
+- RAG.
+- Tools.
+- MCP Server.
+- Documentación.
+- Diagrama de arquitectura.
+- Notas de aprendizaje.
+
+Resultado esperado
+Repositorio que demuestre comprensión de IA desde la neurona hasta la integración con servicios.
+
+
+============================================================
+REGLAS DEL PROYECTO
+============================================================
+
+1. Entender antes de abstraer.
+No usar frameworks complejos para esconder conceptos que todavía no entendemos.
+
+2. Medir.
+Registrar loss, tiempo, uso de VRAM y resultados.
+
+3. Versionar.
+Usar Git desde el principio.
+
+4. Mantener modelos pequeños.
+El objetivo inicial es aprender, no competir con modelos comerciales.
+
+5. Proteger el hardware.
+Usar batch sizes razonables y vigilar temperatura y VRAM.
+
+6. Separar conceptos.
+Distinguir claramente:
+- entrenamiento,
+- inferencia,
+- RAG,
+- tool calling,
+- MCP,
+- APIs.
+
+7. Experimentar.
+Cambiar hiperparámetros y observar efectos.
+
+8. Documentar errores.
+Los fallos forman parte del aprendizaje y deben quedar registrados cuando sean útiles.
+
+
+============================================================
+ESTIMADO GENERAL
+============================================================
+
+Fase 0  — Laboratorio                 2–3 h
+Fase 1  — Neurona                    3–4 h
+Fase 2  — Red neuronal               4–5 h
+Fase 3  — PyTorch + GPU              3–4 h
+Fase 4  — Tokenización               4–5 h
+Fase 5  — Attention                  5–6 h
+Fase 6  — Transformer                6–8 h
+Fase 7  — Entrenamiento              4–6 h
+Fase 8  — API                        3–4 h
+Fase 9  — RAG + Tools                4–5 h
+Fase 10 — MCP                        4–6 h
+Fase 11 — Documentación              2–4 h
+
+Total aproximado:
+44–60 horas
+
+
+============================================================
+HITO ACTUAL
+============================================================
+
+FASE 0 — COMPLETADA
+
+Confirmado:
+- Python 3.13.15
+- pip 26.2.1
+- Entorno virtual .venv
+- PyTorch 2.14.0+cu132
+- CUDA 13.2
+- Arquitectura sm_120
+- NVIDIA GeForce RTX 5050 Laptop GPU detectada
+- Operaciones en GPU funcionando
+
+Siguiente paso:
+FASE 1 — Crear una neurona artificial desde cero.

@@ -1,0 +1,561 @@
+MiniAI Lab — Memoria Técnica del Entorno
+
+Propósito
+Este documento sirve como referencia rápida para retomar el proyecto MiniAI después de apagar/reiniciar la PC o al comenzar una nueva fase.
+
+============================================================
+1. EQUIPO PRINCIPAL
+============================================================
+
+Laptop principal:
+Lenovo LOQ
+
+Uso dentro del proyecto:
+- Desarrollo principal
+- Entrenamiento de modelos
+- PyTorch
+- CUDA
+- Uso de RTX 5050
+- Inferencia de MiniAI
+
+Hardware relevante:
+- CPU: Intel Core i5-13450HX
+- RAM: 32 GB
+- GPU: NVIDIA GeForce RTX 5050 Laptop GPU
+
+============================================================
+2. SOFTWARE / VERSIONES CONFIRMADAS
+============================================================
+
+Python:
+3.13.15
+
+pip:
+26.2.1
+
+PyTorch:
+2.14.0+cu132
+
+torchvision:
+0.29.0+cu132
+
+CUDA usada por PyTorch:
+13.2
+
+Arquitectura GPU soportada:
+sm_120
+
+NumPy:
+2.5.2
+
+Sistema operativo:
+Windows 11 Home Single Language
+
+Editor:
+Visual Studio Code
+
+Terminal principal:
+Git Bash
+
+============================================================
+3. ESTRUCTURA DEL PROYECTO
+============================================================
+
+Ruta principal:
+
+C:\Users\mephi\Desktop\MiniAI
+
+Vista desde Git Bash:
+
+~/desktop/MiniAI
+
+Estructura inicial:
+
+MiniAI/
+├── datasets/
+├── models/
+├── notebooks/
+├── src/
+├── .venv/
+└── README.md
+
+Repositorio Git:
+Inicializado
+
+Rama observada:
+develop
+
+============================================================
+4. ENTORNO VIRTUAL
+============================================================
+
+Nombre del entorno:
+
+.venv
+
+Ubicación:
+
+C:\Users\mephi\Desktop\MiniAI\.venv
+
+IMPORTANTE:
+Las librerías del proyecto deben instalarse dentro de este entorno virtual.
+
+------------------------------------------------------------
+Cómo ACTIVAR el entorno virtual desde Git Bash
+------------------------------------------------------------
+
+1. Abrir Git Bash.
+
+2. Ir al proyecto:
+
+cd ~/desktop/MiniAI
+
+3. Activar el entorno:
+
+source .venv/Scripts/activate
+
+4. Confirmar que se activó.
+
+Debe aparecer algo similar al inicio de la terminal:
+
+(.venv)
+
+Ejemplo:
+
+(.venv)
+mephi@Baticomputadora MINGW64 ~/desktop/MiniAI (develop)
+$
+
+------------------------------------------------------------
+Cómo comprobar que Python corresponde al entorno
+------------------------------------------------------------
+
+Ejecutar:
+
+which python
+
+Debe apuntar a algo similar a:
+
+/c/Users/mephi/desktop/MiniAI/.venv/Scripts/python
+
+Después:
+
+python --version
+pip --version
+
+pip debe mostrar una ruta dentro de:
+
+MiniAI\.venv\Lib\site-packages
+
+------------------------------------------------------------
+Cómo DESACTIVAR el entorno
+------------------------------------------------------------
+
+Ejecutar:
+
+deactivate
+
+El prefijo:
+
+(.venv)
+
+desaparecerá.
+
+============================================================
+5. GPU / LENOVO LEGION
+============================================================
+
+Problema detectado inicialmente:
+PyTorch estaba instalado correctamente con CUDA, pero:
+
+torch.cuda.is_available()
+
+devolvía:
+
+False
+
+Además:
+
+nvidia-smi
+
+no podía comunicarse correctamente con el driver NVIDIA.
+
+------------------------------------------------------------
+Cambio realizado en Lenovo Legion
+------------------------------------------------------------
+
+Se abrió Lenovo Legion / Lenovo Legion Space.
+
+En:
+
+Configuración conveniente
+→ Modalidad de funcionamiento de la GPU
+
+El equipo estaba usando:
+
+Modalidad híbrida
+
+Se cambió temporalmente a:
+
+Modalidad dGPU
+
+Después se reinició la PC.
+
+Resultado:
+nvidia-smi volvió a detectar correctamente:
+
+NVIDIA GeForce RTX 5050 Laptop GPU
+
+Y PyTorch pudo usar la GPU.
+
+------------------------------------------------------------
+Qué hacer si CUDA deja de funcionar en el futuro
+------------------------------------------------------------
+
+Primero revisar Lenovo Legion.
+
+Confirmar que la GPU NVIDIA esté disponible.
+
+Si aparece un problema similar, probar:
+
+Modalidad dGPU
+
+y reiniciar.
+
+Después ejecutar:
+
+nvidia-smi
+
+Si la RTX 5050 aparece correctamente, probar PyTorch.
+
+============================================================
+6. PYTORCH Y CUDA
+============================================================
+
+PyTorch fue instalado con soporte para CUDA 13.2.
+
+Comando utilizado:
+
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu132
+
+También se instalaron:
+
+pip install numpy matplotlib
+
+------------------------------------------------------------
+Comprobar PyTorch
+------------------------------------------------------------
+
+Ejecutar dentro del entorno virtual:
+
+python -c "import torch; print(torch.__version__)"
+
+Resultado esperado aproximado:
+
+2.14.0+cu132
+
+------------------------------------------------------------
+Comprobar CUDA
+------------------------------------------------------------
+
+Ejecutar:
+
+python -c "import torch; print('CUDA:', torch.cuda.is_available()); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No detectada')"
+
+Resultado esperado:
+
+CUDA: True
+GPU: NVIDIA GeForce RTX 5050 Laptop GPU
+
+------------------------------------------------------------
+Comprobar arquitectura soportada
+------------------------------------------------------------
+
+Ejecutar:
+
+python -c "import torch; print(torch.cuda.get_arch_list())"
+
+Resultado observado:
+
+['sm_75', 'sm_80', 'sm_86', 'sm_90', 'sm_100', 'sm_120']
+
+La RTX 5050 utiliza soporte sm_120.
+
+------------------------------------------------------------
+Comprobar versión CUDA usada por PyTorch
+------------------------------------------------------------
+
+Ejecutar:
+
+python -c "import torch; print(torch.version.cuda)"
+
+Resultado esperado:
+
+13.2
+
+============================================================
+7. PRIMERA PRUEBA GPU
+============================================================
+
+Prueba simple:
+
+python -c "import torch; a=torch.tensor([1.,2.,3.],device='cuda'); b=torch.tensor([4.,5.,6.],device='cuda'); print(a*b); print('Dispositivo:', (a*b).device)"
+
+Resultado esperado:
+
+tensor([ 4., 10., 18.], device='cuda:0')
+Dispositivo: cuda:0
+
+Esto confirma que los cálculos se están ejecutando en la RTX.
+
+============================================================
+8. RUTINA PARA RETOMAR EL PROYECTO
+============================================================
+
+Cada vez que prendamos la PC y queramos seguir trabajando:
+
+------------------------------------------------------------
+PASO 1 — Revisar GPU si vamos a usar entrenamiento
+------------------------------------------------------------
+
+Abrir Lenovo Legion si es necesario.
+
+Verificar que la NVIDIA RTX 5050 esté disponible.
+
+Si CUDA da problemas:
+- Cambiar a Modalidad dGPU.
+- Reiniciar.
+
+------------------------------------------------------------
+PASO 2 — Abrir Git Bash
+------------------------------------------------------------
+
+Ir al proyecto:
+
+cd ~/desktop/MiniAI
+
+------------------------------------------------------------
+PASO 3 — Activar entorno virtual
+------------------------------------------------------------
+
+source .venv/Scripts/activate
+
+Confirmar que aparezca:
+
+(.venv)
+
+------------------------------------------------------------
+PASO 4 — Abrir VS Code
+------------------------------------------------------------
+
+Desde Git Bash:
+
+code .
+
+Así VS Code abrirá directamente la carpeta MiniAI.
+
+------------------------------------------------------------
+PASO 5 — Verificar intérprete de Python en VS Code
+------------------------------------------------------------
+
+VS Code debe utilizar:
+
+MiniAI\.venv\Scripts\python.exe
+
+Si no lo hace:
+
+Ctrl + Shift + P
+
+Buscar:
+
+Python: Select Interpreter
+
+Seleccionar el Python dentro de:
+
+MiniAI\.venv
+
+------------------------------------------------------------
+PASO 6 — Prueba rápida opcional
+------------------------------------------------------------
+
+Antes de entrenar modelos:
+
+python -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No GPU')"
+
+Debe devolver:
+
+True
+NVIDIA GeForce RTX 5050 Laptop GPU
+
+------------------------------------------------------------
+PASO 7 — Trabajar normalmente
+------------------------------------------------------------
+
+Ejecutar scripts desde Git Bash:
+
+python src/nombre_script.py
+
+o utilizar VS Code.
+
+============================================================
+9. RUTINA CORTA — CHECKLIST DE ARRANQUE
+============================================================
+
+Después de prender la PC:
+
+1. Abrir Git Bash.
+
+2. Ejecutar:
+
+cd ~/desktop/MiniAI
+
+3. Activar entorno:
+
+source .venv/Scripts/activate
+
+4. Abrir VS Code:
+
+code .
+
+5. Si la fase utiliza GPU, comprobar:
+
+python -c "import torch; print(torch.cuda.is_available())"
+
+6. Si devuelve True:
+continuar trabajando.
+
+7. Si devuelve False:
+revisar Lenovo Legion y modalidad de GPU.
+
+============================================================
+10. COMANDOS DE DIAGNÓSTICO
+============================================================
+
+Python:
+
+python --version
+
+pip:
+
+pip --version
+
+Ruta de Python:
+
+which python
+
+GPU NVIDIA:
+
+nvidia-smi
+
+PyTorch:
+
+python -c "import torch; print(torch.__version__)"
+
+CUDA:
+
+python -c "import torch; print(torch.cuda.is_available())"
+
+GPU detectada:
+
+python -c "import torch; print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No GPU')"
+
+CUDA de PyTorch:
+
+python -c "import torch; print(torch.version.cuda)"
+
+Arquitecturas compatibles:
+
+python -c "import torch; print(torch.cuda.get_arch_list())"
+
+Información completa del entorno:
+
+python -m torch.utils.collect_env
+
+============================================================
+11. ERRORES QUE YA ENCONTRAMOS
+============================================================
+
+Caso 1:
+which python~
+
+Problema:
+Se agregó accidentalmente ~ al comando.
+
+Correcto:
+
+which python
+
+------------------------------------------------------------
+
+Caso 2:
+Python interactivo mostraba:
+
+...
+
+Problema:
+El intérprete estaba esperando finalizar un bloque multilinea.
+
+Solución:
+Usar una línea vacía para cerrar el bloque o ejecutar pruebas rápidas con:
+
+python -c "..."
+
+------------------------------------------------------------
+
+Caso 3:
+torch.cuda.is_available() = False
+
+Aunque PyTorch mostraba:
+
+2.14.0+cu132
+
+Y:
+
+torch.version.cuda = 13.2
+
+Causa encontrada:
+La GPU NVIDIA no estaba siendo correctamente expuesta al sistema bajo la configuración previa.
+
+Solución aplicada:
+Lenovo Legion
+→ Modalidad GPU
+→ Modalidad dGPU
+→ Reiniciar
+
+============================================================
+12. RECOMENDACIONES
+============================================================
+
+- No instalar CUDA Toolkit adicional salvo que una fase futura realmente lo requiera.
+- No reinstalar PyTorch si CUDA falla antes de revisar la GPU.
+- Mantener el entorno virtual separado.
+- Instalar nuevas dependencias siempre con .venv activo.
+- Guardar dependencias importantes.
+- Evitar llenar el proyecto con frameworks antes de necesitarlos.
+- Comprobar CUDA antes de entrenamientos largos.
+- Mantener la laptop conectada a corriente durante entrenamiento.
+- Vigilar temperatura y VRAM en fases de entrenamiento.
+
+============================================================
+13. SIGUIENTE FASE
+============================================================
+
+Estado actual:
+
+FASE 0 — COMPLETADA
+
+Siguiente:
+
+FASE 1 — Crear una neurona artificial desde cero
+
+Para comenzar la próxima sesión:
+
+cd ~/desktop/MiniAI
+source .venv/Scripts/activate
+code .
+
+Después podremos crear el primer archivo de la Fase 1 dentro de:
+
+src/
+
+y comenzar a construir nuestra primera neurona artificial.
