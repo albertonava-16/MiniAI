@@ -3,6 +3,12 @@ MiniAI Lab — Memoria Técnica del Entorno
 Propósito
 Este documento sirve como referencia rápida para retomar el proyecto MiniAI después de apagar/reiniciar la PC o al comenzar una nueva fase.
 
+Última actualización de avance: 13 de septiembre de 2026.
+Punto de pausa: Fase 2 en curso, red XOR y estudio de backpropagation.
+Retomar la semana siguiente con los pasos de la sección 13.
+Las versiones y pruebas de GPU de este documento corresponden al registro
+previo del entorno; no se volvieron a comprobar en esta actualización.
+
 ============================================================
 1. EQUIPO PRINCIPAL
 ============================================================
@@ -69,13 +75,22 @@ Vista desde Git Bash:
 
 ~/desktop/MiniAI
 
-Estructura inicial:
+Archivos de trabajo actuales:
 
 MiniAI/
-├── datasets/
-├── models/
-├── notebooks/
+├── documentation/
+│   ├── MiniAI_Memoria_Tecnica.txt
+│   ├── MiniAI_Plan_de_Trabajo.txt
+│   └── code docs/
+│       └── 00_breviario.md
 ├── src/
+│   ├── fase1/
+│   │   ├── 01_neurona_basica.py
+│   │   ├── 02_neurona_entrenamiento.py
+│   │   └── 03_frontera_decision.py
+│   └── fase2/
+│       ├── 01_red_xor.py
+│       └── 02_backprop_xor.py
 ├── .venv/
 └── README.md
 
@@ -537,16 +552,91 @@ Lenovo Legion
 - Vigilar temperatura y VRAM en fases de entrenamiento.
 
 ============================================================
-13. SIGUIENTE FASE
+13. AVANCE Y PUNTO PARA RETOMAR
 ============================================================
 
-Estado actual:
+Fecha de corte: 13 de septiembre de 2026.
+Pausa del trabajo hasta la semana siguiente.
 
-FASE 0 — COMPLETADA
+Estado actual según el código y lo trabajado:
 
-Siguiente:
+- FASE 0 — COMPLETADA, según el registro previo del entorno.
+- FASE 1 — Implementados los ejercicios de neurona básica, entrenamiento
+  de AND y frontera de decisión.
+- FASE 2 — EN CURSO: red XOR con NumPy y ejercicio de backpropagation.
+- FASE 3 — Pendiente: trasladar la red a PyTorch y entrenamiento con GPU.
 
-FASE 1 — Crear una neurona artificial desde cero
+------------------------------------------------------------
+Avance de la Fase 1
+------------------------------------------------------------
+
+src/fase1/01_neurona_basica.py:
+Calcula suma ponderada, sigmoide, predicción y pérdida para AND con pesos
+fijos. Este primer archivo no ajusta los pesos.
+
+src/fase1/02_neurona_entrenamiento.py:
+Entrena una neurona durante 10000 épocas, ajustando dos pesos y un bias.
+Al terminar, calcula las predicciones con los parámetros aprendidos.
+
+src/fase1/03_frontera_decision.py:
+Dibuja los puntos de AND y la recta de separación con pesos ya escritos
+en el archivo. Sirve para visualizar la decisión de la neurona.
+
+Referencia de conceptos: documentation/code docs/00_breviario.md.
+
+------------------------------------------------------------
+Avance de la Fase 2
+------------------------------------------------------------
+
+Archivo principal: src/fase2/01_red_xor.py.
+
+- Red de 2 entradas, 2 neuronas ocultas y 1 neurona de salida.
+- Usa NumPy para los cálculos y Matplotlib para la gráfica.
+- Semilla: 42. learning_rate: 0.5. epochs: 10000.
+- Entrena con los cuatro ejemplos de XOR juntos en cada época.
+- Ciclo: forward -> error -> backpropagation -> ajuste de pesos y bias.
+- Calcula loss = np.mean(error ** 2) y lo guarda en loss_history.
+- Incluye comentarios explicativos de las funciones y los bloques.
+- Muestra el recorrido de la entrada [0, 1] por la red entrenada.
+- Imprime las activaciones ocultas para cada entrada.
+- Recalcula los resultados finales con los pesos ya actualizados y usa
+  un umbral de 0.5 para obtener las clases 0 y 1.
+
+El entrenamiento empieza en for epoch in range(epochs): y termina tras
+la actualización de b1. El comentario AQUÍ YA TERMINÓ EL ENTRENAMIENTO
+marca el paso a las gráficas y a los cálculos posteriores.
+
+Segundo archivo: src/fase2/02_backprop_xor.py.
+
+Usa pesos y bias fijados en el código para estudiar el ejemplo [0, 1],
+cuya respuesta esperada es 1. Imprime el forward, el error, output_delta,
+hidden_error y hidden_delta. No contiene un ciclo de entrenamiento ni
+actualiza los parámetros: permite observar los cálculos intermedios.
+
+Conceptos repasados durante el trabajo:
+- AND da 1 solo cuando ambas entradas son 1; XOR da 1 si son distintas.
+- Aprender consiste en ajustar pesos y bias a partir del error.
+- Las neuronas ocultas son cálculos intermedios entre entrada y salida.
+- sigmoid transforma la suma ponderada en una activación entre 0 y 1.
+- sigmoid_derivative recibe esa activación y calcula su pendiente.
+- Una época recorre todo el conjunto de entrenamiento.
+
+------------------------------------------------------------
+Pendientes y primera tarea de la próxima sesión
+------------------------------------------------------------
+
+1. Retomar src/fase2/02_backprop_xor.py y explicar paso a paso qué
+   representan output_delta, hidden_error y hidden_delta.
+2. En src/fase2/01_red_xor.py, conectar la gráfica con loss_history.
+   Actualmente grafica [10, 8, 6, 4, 2, 1] como prueba de Matplotlib y
+   guarda prueba_matplotlib.png; todavía no muestra la pérdida real.
+3. Ejecutar la red, comprobar las cuatro predicciones de XOR y registrar
+   la pérdida inicial y final. Comparar distintas tasas de aprendizaje.
+4. Cerrar la Fase 2 cuando se haya verificado la reducción de la pérdida
+   y repasado el flujo completo, antes de pasar a PyTorch.
+
+Estos pendientes se identificaron leyendo el código. No se ejecutaron
+los scripts ni se validaron nuevas métricas en esta actualización.
 
 Para comenzar la próxima sesión:
 
@@ -554,8 +644,17 @@ cd ~/desktop/MiniAI
 source .venv/Scripts/activate
 code .
 
-Después podremos crear el primer archivo de la Fase 1 dentro de:
+Ejecutar primero el ejercicio de backpropagation:
 
-src/
+python src/fase2/02_backprop_xor.py
 
-y comenzar a construir nuestra primera neurona artificial.
+Después, para entrenar la red completa:
+
+python src/fase2/01_red_xor.py
+
+La red actual usa CPU con NumPy; estos ejercicios no requieren CUDA.
+Si la gráfica abre una ventana, cerrarla para continuar con las impresiones
+que aparecen después de plt.show().
+
+Nota de documentación: el HITO ACTUAL del plan de trabajo todavía indica
+Fase 0. Para retomar, usar el avance actualizado de esta memoria.
