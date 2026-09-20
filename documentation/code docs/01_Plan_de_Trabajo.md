@@ -5,11 +5,11 @@ Este documento organiza el recorrido de MiniAI: desde una neurona artificial has
 La intención es avanzar por fases, entender cada componente y registrar resultados antes de pasar al siguiente nivel.
 
 **Duración estimada total:** 44–60 horas, según la suma de las fases.  
-**Último avance registrado:** 13 de septiembre de 2026.  
+**Último avance registrado:** 19 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 2 en curso, red XOR y estudio de backpropagation.
+**Punto para retomar:** Fase 4, tokenización y embeddings.
 
-Documentos relacionados: [memoria técnica](MiniAI_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
+Documentos relacionados: [memoria técnica](02_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
 Documento convertido a partir de `MiniAI_Plan_de_Trabajo.txt`. Las próximas actualizaciones se registrarán en esta versión Markdown.
 
@@ -63,30 +63,30 @@ Cada fase incluye un objetivo, tareas, conceptos clave, un criterio de salida y 
 
 ## Estado actual y siguiente sesión
 
-El avance se toma de la [memoria técnica](MiniAI_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **13 de septiembre de 2026**.
+El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **19 de septiembre de 2026**.
 
 | Fase | Avance registrado |
 | --- | --- |
 | 0. Laboratorio | Completada según las pruebas previas del entorno. |
 | 1. Neurona artificial | Implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión. |
-| 2. Red neuronal | En curso: red XOR con NumPy y ejercicio de backpropagation. |
-| 3–11 | Pendientes en el registro de avance. |
+| 2. Red neuronal | Trabajada: red XOR con NumPy y ejercicio de backpropagation. |
+| 3. PyTorch y GPU | Completada: tensores, CUDA, XOR en PyTorch, gradientes reales, optimizador y benchmark CPU vs GPU. |
+| 4–11 | Pendientes en el registro de avance. |
 
-Los estados describen el avance documentado. Esta reorganización no incluye nuevas ejecuciones, métricas de entrenamiento ni comprobaciones de GPU.
+Los estados describen el avance documentado. La Fase 3 registra los ejercicios implementados en `src/fase3` y el resultado observado del benchmark de matrices.
 
 ### Primera tarea al retomar
 
-Estudiar [02_backprop_xor.py](../../src/fase2/02_backprop_xor.py) y explicar qué representan `output_delta`, `hidden_error` y `hidden_delta`.
+Comenzar la [Fase 4](#fase-4-tokenización-y-embeddings), creando un corpus pequeño, un vocabulario y un tokenizador sencillo.
 
 Después:
 
-- [ ] Conectar la gráfica de [01_red_xor.py](../../src/fase2/01_red_xor.py) con `loss_history`; aún utiliza datos de prueba de Matplotlib.
-- [ ] Comprobar las cuatro predicciones de XOR.
-- [ ] Registrar la pérdida inicial y final.
-- [ ] Comparar distintas tasas de aprendizaje.
-- [ ] Repasar el flujo completo y verificar el criterio de salida de la Fase 2 antes de pasar a PyTorch.
+- [ ] Definir el corpus mínimo de prueba.
+- [ ] Convertir texto a IDs y de IDs a texto.
+- [ ] Crear embeddings pequeños.
+- [ ] Preparar pares `input/target` para predicción del siguiente token.
 
-Los comandos para comenzar están en [Inicio rápido de la memoria técnica](MiniAI_Memoria_Tecnica.md#inicio-rápido).
+Los comandos para comenzar están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido).
 
 ---
 
@@ -98,8 +98,8 @@ Los tiempos son estimaciones de dedicación por fase, no horas medidas ni fechas
 | ---: | --- | ---: | --- |
 | 0 | Preparar el laboratorio | 2–3 h | Completada |
 | 1 | Neurona artificial | 3–4 h | Ejercicios implementados |
-| 2 | Red neuronal | 4–5 h | En curso |
-| 3 | PyTorch y GPU | 3–4 h | Pendiente |
+| 2 | Red neuronal | 4–5 h | Trabajada |
+| 3 | PyTorch y GPU | 3–4 h | Completada |
 | 4 | Tokenización y embeddings | 4–5 h | Pendiente |
 | 5 | Self-attention | 5–6 h | Pendiente |
 | 6 | Transformer | 6–8 h | Pendiente |
@@ -168,7 +168,7 @@ Dejar listo un entorno reproducible para desarrollar, entrenar y probar MiniAI.
 
 ### Estructura inicial sugerida
 
-Esta es la estructura propuesta en el plan original. El detalle de los archivos de trabajo está en la [memoria técnica](MiniAI_Memoria_Tecnica.md#estructura-del-proyecto).
+Esta es la estructura propuesta en el plan original. El detalle de los archivos de trabajo está en la [memoria técnica](02_Memoria_Tecnica.md#estructura-del-proyecto).
 
 ```text
 MiniAI/
@@ -201,7 +201,7 @@ Laboratorio listo para trabajar con IA localmente.
 
 El hito original confirmó Python `3.13.15`, pip `26.2.1`, el entorno `.venv`, PyTorch `2.14.0+cu132`, CUDA `13.2`, la arquitectura `sm_120`, la detección de la NVIDIA GeForce RTX 5050 Laptop GPU y operaciones en GPU funcionando.
 
-Las versiones, los comandos y las salidas de esas pruebas se conservan en la [memoria técnica](MiniAI_Memoria_Tecnica.md#software-y-versiones-registradas). Son comprobaciones previas, no resultados nuevos de esta reorganización.
+Las versiones, los comandos y las salidas de esas pruebas se conservan en la [memoria técnica](02_Memoria_Tecnica.md#software-y-versiones-registradas). Son comprobaciones previas, no resultados nuevos de esta reorganización.
 
 ---
 
@@ -300,7 +300,7 @@ Capa oculta
 Salida
 ```
 
-El ejercicio actual utiliza XOR, con 2 entradas, 2 neuronas ocultas y 1 neurona de salida. Su avance y los pendientes están en la [memoria técnica](MiniAI_Memoria_Tecnica.md#avance-y-punto-para-retomar).
+El ejercicio de Fase 2 utiliza XOR, con 2 entradas, 2 neuronas ocultas y 1 neurona de salida. Su avance y los pendientes conservados están en la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar).
 
 ### Conceptos clave
 
@@ -318,7 +318,7 @@ Comprender el flujo completo de aprendizaje de una red neuronal.
 
 ## Fase 3: PyTorch y entrenamiento con GPU
 
-**Estado:** pendiente.  
+**Estado:** completada.
 **Tiempo estimado:** 3–4 horas.
 
 ### Objetivo
@@ -327,17 +327,47 @@ Traducir lo aprendido manualmente a herramientas de aprendizaje automático.
 
 ### Tareas
 
-- Introducir `torch.Tensor`.
-- Comparar NumPy con los tensores de PyTorch.
-- Ejecutar operaciones en CPU.
-- Mover tensores a GPU.
-- Crear un modelo con `torch.nn`.
-- Usar `autograd`.
-- Ejecutar `loss.backward()`.
-- Usar un optimizador.
-- Entrenar en GPU.
-- Medir el uso de VRAM.
-- Comparar tiempos en CPU y GPU.
+- [x] Introducir `torch.Tensor`.
+- [x] Comparar NumPy con los tensores de PyTorch.
+- [x] Ejecutar operaciones en CPU.
+- [x] Mover tensores a GPU.
+- [x] Crear un modelo con `torch.nn`.
+- [x] Usar `autograd`.
+- [x] Ejecutar `loss.backward()`.
+- [x] Usar un optimizador.
+- [x] Entrenar en GPU.
+- [ ] Medir el uso de VRAM.
+- [x] Comparar tiempos en CPU y GPU.
+
+### Ejercicios implementados
+
+| Archivo | Propósito |
+| --- | --- |
+| [01_tensores_gpu.py](../../src/fase3/01_tensores_gpu.py) | Crea tensores, detecta CUDA y mueve datos al dispositivo elegido. |
+| [02_xor_pytorch.py](../../src/fase3/02_xor_pytorch.py) | Reimplementa XOR con PyTorch usando `nn.Module`, `nn.Linear`, `MSELoss` y `torch.optim.SGD`. |
+| [03_autograd_basico.py](../../src/fase3/03_autograd_basico.py) | Muestra `requires_grad=True`, `backward()` y el gradiente de una expresión simple. |
+| [04_gradientes_red.py](../../src/fase3/04_gradientes_red.py) | Imprime gradientes reales de pesos y bias después de `loss.backward()`. |
+| [05_peso_antes_despues.py](../../src/fase3/05_peso_antes_despues.py) | Muestra el cambio visible de un peso tras `optimizer.step()`. |
+| [06_cpu_vs_gpu.py](../../src/fase3/06_cpu_vs_gpu.py) | Compara el entrenamiento de XOR en CPU y GPU. |
+| [07_matrices_cpu_vs_gpu.py](../../src/fase3/07_matrices_cpu_vs_gpu.py) | Compara multiplicación de matrices grandes en CPU y GPU. |
+
+### Registro del hito completado
+
+La RTX 5050 quedó disponible para PyTorch mediante CUDA. Los ejercicios confirmaron que los tensores pueden moverse de CPU a GPU y que la red XOR puede entrenarse con PyTorch usando el mismo flujo conceptual aprendido a mano:
+
+```text
+Forward
+  ↓
+MSELoss
+  ↓
+optimizer.zero_grad()
+  ↓
+loss.backward()
+  ↓
+optimizer.step()
+```
+
+En el benchmark de matrices `3000x3000`, la GPU fue aproximadamente **11-14x** más rápida que la CPU. Este resultado aparece en operaciones grandes de álgebra lineal; en redes diminutas como XOR, la GPU no necesariamente muestra ventaja por el costo de coordinar operaciones pequeñas.
 
 ### Conceptos clave
 
@@ -778,6 +808,6 @@ Repositorio que demuestre comprensión de IA desde la neurona hasta la integraci
 ## Notas de la reorganización
 
 - **Duración:** el original indicaba 42–56 horas en la introducción y 44–60 en el resumen. Se unifica en **44–60 horas**, que corresponde a sumar los rangos de las doce fases.
-- **Avance:** el hito original señalaba la Fase 0 completada y proponía comenzar la Fase 1. Se conserva ese hito en su fase y se actualiza el punto para retomar a la **Fase 2**, conforme a la memoria técnica del 13 de septiembre de 2026.
+- **Avance:** el hito original señalaba la Fase 0 completada y proponía comenzar la Fase 1. Se conserva ese hito en su fase y se actualiza el punto para retomar a la **Fase 4**, conforme a la memoria técnica del 19 de septiembre de 2026.
 - **Cierre de fases:** los ejercicios de la Fase 1 se describen como implementados; esta conversión no declara una nueva validación de sus resultados ni da por concluida la Fase 2.
 - **Formato:** se unifican títulos, tareas, conceptos, criterios de salida, ejemplos y resultados. En la Fase 11 se explicitan conceptos y un criterio de salida a partir de sus tareas y entregables originales.

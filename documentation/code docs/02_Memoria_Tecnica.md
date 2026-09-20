@@ -4,13 +4,13 @@ Este documento reúne la configuración del entorno, los comandos de trabajo y l
 
 La intención es tener una referencia rápida para retomar el proyecto después de reiniciar la computadora o al comenzar una nueva fase.
 
-**Último avance registrado:** 13 de septiembre de 2026.  
+**Último avance registrado:** 19 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 2 en curso, red XOR y estudio de backpropagation.
+**Punto para retomar:** Fase 4, tokenización y embeddings.
 
 Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Esta reorganización no incluye nuevas ejecuciones de los ejercicios ni una comprobación del entorno o de CUDA.
 
-Documentos relacionados: [plan de trabajo](MiniAI_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
+Documentos relacionados: [plan de trabajo](01_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
 Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas actualizaciones se registrarán en esta versión Markdown.
 
@@ -26,6 +26,7 @@ Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas act
 - [Entorno virtual](#entorno-virtual)
 - [GPU y Lenovo Legion](#gpu-y-lenovo-legion)
 - [PyTorch y CUDA](#pytorch-y-cuda)
+- [Fase 3: PyTorch y entrenamiento con GPU](#fase-3-pytorch-y-entrenamiento-con-gpu)
 - [Primera prueba de GPU](#primera-prueba-de-gpu)
 - [Rutina para retomar el proyecto](#rutina-para-retomar-el-proyecto)
 - [Comandos de diagnóstico](#comandos-de-diagnóstico)
@@ -46,7 +47,7 @@ code .
 
 Confirmar que aparezca `(.venv)` al inicio de la terminal.
 
-Para retomar el ejercicio de backpropagation:
+Para repasar el ejercicio de backpropagation de la Fase 2:
 
 ```bash
 python src/fase2/02_backprop_xor.py
@@ -68,18 +69,30 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 Si devuelve `True`, continuar. Si devuelve `False`, revisar el [problema de GPU registrado](#gpu-y-lenovo-legion).
 
+Para ejecutar los ejercicios de la Fase 3:
+
+```bash
+python src/fase3/01_tensores_gpu.py
+python src/fase3/02_xor_pytorch.py
+python src/fase3/03_autograd_basico.py
+python src/fase3/04_gradientes_red.py
+python src/fase3/05_peso_antes_despues.py
+python src/fase3/06_cpu_vs_gpu.py
+python src/fase3/07_matrices_cpu_vs_gpu.py
+```
+
 ---
 
 ## Avance y punto para retomar
 
-La fecha de corte del avance es el **13 de septiembre de 2026**. En esa sesión se dejó el trabajo en pausa para retomarlo la semana siguiente.
+La fecha de corte del avance es el **19 de septiembre de 2026**.
 
 | Fase | Estado registrado | Alcance |
 | --- | --- | --- |
 | 0. Laboratorio | Completada | Configuración y pruebas de GPU según el registro previo. |
 | 1. Neurona artificial | Ejercicios implementados | Neurona básica, entrenamiento de AND y frontera de decisión. |
-| 2. Red neuronal | En curso | Red XOR con NumPy y ejercicio de backpropagation. |
-| 3. PyTorch y GPU | Pendiente | Trasladar la red a PyTorch y entrenar con GPU. |
+| 2. Red neuronal | Trabajada | Red XOR con NumPy y ejercicio de backpropagation. |
+| 3. PyTorch y GPU | Completada | Tensores en CPU/GPU, CUDA, XOR en PyTorch, autograd, gradientes, optimizador y benchmark. |
 
 ### Avance de la Fase 1
 
@@ -136,7 +149,7 @@ El segundo archivo es [02_backprop_xor.py](../../src/fase2/02_backprop_xor.py). 
 - `sigmoid_derivative` recibe esa activación y calcula la pendiente de la sigmoide.
 - Una época recorre todo el conjunto de entrenamiento.
 
-### Pendientes de la próxima sesión
+### Pendientes conservados de la Fase 2
 
 - [ ] Explicar paso a paso `output_delta`, `hidden_error` y `hidden_delta` en `02_backprop_xor.py`.
 - [ ] Conectar la gráfica de `01_red_xor.py` con `loss_history`. Actualmente dibuja `[10, 8, 6, 4, 2, 1]` y guarda `prueba_matplotlib.png` como prueba de Matplotlib.
@@ -147,6 +160,58 @@ El segundo archivo es [02_backprop_xor.py](../../src/fase2/02_backprop_xor.py). 
 Estos pendientes se identificaron leyendo el código. No representan métricas nuevas ni resultados de una ejecución durante esta reorganización.
 
 El plan en Markdown refleja este mismo avance. El hito de Fase 0 del plan original era anterior a este registro.
+
+### Avance de la Fase 3
+
+La Fase 3 traslada el aprendizaje manual de NumPy a PyTorch y confirma que la RTX 5050 puede ejecutar operaciones con CUDA.
+
+| Archivo | Qué permite estudiar |
+| --- | --- |
+| [01_tensores_gpu.py](../../src/fase3/01_tensores_gpu.py) | `torch.Tensor`, detección de CUDA, selección de `device` y movimiento de tensores con `.to(device)`. |
+| [02_xor_pytorch.py](../../src/fase3/02_xor_pytorch.py) | Red XOR en PyTorch con `nn.Module`, dos capas `nn.Linear`, `torch.sigmoid`, `MSELoss` y `SGD`. |
+| [03_autograd_basico.py](../../src/fase3/03_autograd_basico.py) | Cálculo automático de gradientes con `requires_grad=True` y `backward()`. |
+| [04_gradientes_red.py](../../src/fase3/04_gradientes_red.py) | Gradientes reales de `weight` y `bias` después de ejecutar `loss.backward()`. |
+| [05_peso_antes_despues.py](../../src/fase3/05_peso_antes_despues.py) | Cambio de un peso específico antes y después de `optimizer.step()`. |
+| [06_cpu_vs_gpu.py](../../src/fase3/06_cpu_vs_gpu.py) | Comparación de entrenamiento XOR en CPU y GPU. |
+| [07_matrices_cpu_vs_gpu.py](../../src/fase3/07_matrices_cpu_vs_gpu.py) | Benchmark de multiplicación de matrices `3000x3000` en CPU y GPU. |
+
+El flujo de entrenamiento quedó expresado así:
+
+```text
+output = modelo(X)
+loss = criterio(output, y)
+optimizer.zero_grad()
+loss.backward()
+optimizer.step()
+```
+
+`loss.backward()` calcula los gradientes de los parámetros que participaron en el forward. Después, `optimizer.step()` modifica esos parámetros usando los gradientes acumulados y la tasa de aprendizaje.
+
+En `05_peso_antes_despues.py` se observó el cambio visible de un peso de `modelo.capa1.weight[0, 0]` después de una actualización. Este ejercicio conecta el concepto manual de "ajustar pesos" con la forma en que PyTorch lo automatiza.
+
+### Benchmark CPU vs GPU
+
+La prueba de matrices usa multiplicaciones `a @ b` con matrices de `3000x3000` y varias repeticiones.
+
+Resultado registrado:
+
+```text
+GPU aproximadamente 11-14x más rápida que la CPU
+```
+
+La diferencia se nota en matrices grandes porque la GPU puede ejecutar muchas multiplicaciones y sumas en paralelo. En ejercicios pequeños, como XOR, el costo de preparar y sincronizar operaciones puede ocultar la ventaja de la GPU.
+
+### Punto para retomar
+
+La siguiente fase es la [Fase 4 del plan](01_Plan_de_Trabajo.md#fase-4-tokenización-y-embeddings): tokenización y embeddings.
+
+Primera tarea recomendada:
+
+- Crear un corpus pequeño.
+- Construir un vocabulario.
+- Convertir texto a IDs.
+- Convertir IDs de vuelta a texto.
+- Crear embeddings para representar tokens como vectores.
 
 ---
 
@@ -204,16 +269,24 @@ MiniAI/
 ├── documentation/
 │   └── code docs/
 │       ├── 00_breviario.md
-│       ├── MiniAI_Memoria_Tecnica.md
-│       └── MiniAI_Plan_de_Trabajo.md
+│       ├── 01_Plan_de_Trabajo.md
+│       └── 02_Memoria_Tecnica.md
 ├── src/
 │   ├── fase1/
 │   │   ├── 01_neurona_basica.py
 │   │   ├── 02_neurona_entrenamiento.py
 │   │   └── 03_frontera_decision.py
-│   └── fase2/
-│       ├── 01_red_xor.py
-│       └── 02_backprop_xor.py
+│   ├── fase2/
+│   │   ├── 01_red_xor.py
+│   │   └── 02_backprop_xor.py
+│   └── fase3/
+│       ├── 01_tensores_gpu.py
+│       ├── 02_xor_pytorch.py
+│       ├── 03_autograd_basico.py
+│       ├── 04_gradientes_red.py
+│       ├── 05_peso_antes_despues.py
+│       ├── 06_cpu_vs_gpu.py
+│       └── 07_matrices_cpu_vs_gpu.py
 ├── .venv/
 ├── .gitignore
 └── README.md

@@ -16,19 +16,20 @@ El proyecto avanza desde la matemática fundamental hasta una arquitectura capaz
 
 ## Estado actual
 
-Avance registrado al 13 de septiembre de 2026, según la memoria técnica:
+Avance registrado al 19 de septiembre de 2026, según la memoria técnica:
 
 - **Fase 0 - Laboratorio:** completada según las pruebas previas del entorno.
 - **Fase 1 - Neurona artificial:** implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión.
-- **Fase 2 - Red neuronal:** en curso, con una red XOR en NumPy y un ejercicio de backpropagation.
-- **Siguiente paso:** repasar backpropagation, conectar la gráfica con la pérdida real y comprobar las predicciones de XOR antes de pasar a PyTorch.
+- **Fase 2 - Red neuronal:** trabajada con una red XOR en NumPy y un ejercicio de backpropagation.
+- **Fase 3 - PyTorch y GPU:** completada con tensores en CPU/GPU, XOR en PyTorch, `autograd`, gradientes reales, `optimizer.step()` y benchmarks CPU vs GPU.
+- **Siguiente paso:** pasar a la Fase 4 para tokenización y embeddings.
 
 ## Documentación
 
 Los documentos siguen un formato común en Markdown, con secciones, ejemplos y enlaces de consulta:
 
-- [Memoria técnica](documentation/code%20docs/MiniAI_Memoria_Tecnica.md): entorno, comandos, diagnóstico y punto para retomar.
-- [Plan de trabajo](documentation/code%20docs/MiniAI_Plan_de_Trabajo.md): fases, tareas, criterios de salida y estimaciones.
+- [Memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md): entorno, comandos, diagnóstico y punto para retomar.
+- [Plan de trabajo](documentation/code%20docs/01_Plan_de_Trabajo.md): fases, tareas, criterios de salida y estimaciones.
 - [Breviario de conceptos](documentation/code%20docs/00_breviario.md): definiciones y ejemplos de los conceptos aprendidos.
 
 La memoria técnica y el plan se convirtieron de texto plano a Markdown. Las próximas actualizaciones se registrarán en estos archivos `.md`.
@@ -67,16 +68,24 @@ MiniAI/
 |-- documentation/            # Plan, memoria técnica y breviario
 |   `-- code docs/
 |       |-- 00_breviario.md
-|       |-- MiniAI_Memoria_Tecnica.md
-|       `-- MiniAI_Plan_de_Trabajo.md
+|       |-- 01_Plan_de_Trabajo.md
+|       `-- 02_Memoria_Tecnica.md
 |-- src/                      # Código fuente organizado por fases
 |   |-- fase1/
 |   |   |-- 01_neurona_basica.py
 |   |   |-- 02_neurona_entrenamiento.py
 |   |   `-- 03_frontera_decision.py
-|   `-- fase2/
-|       |-- 01_red_xor.py
-|       `-- 02_backprop_xor.py
+|   |-- fase2/
+|   |   |-- 01_red_xor.py
+|   |   `-- 02_backprop_xor.py
+|   `-- fase3/
+|       |-- 01_tensores_gpu.py
+|       |-- 02_xor_pytorch.py
+|       |-- 03_autograd_basico.py
+|       |-- 04_gradientes_red.py
+|       |-- 05_peso_antes_despues.py
+|       |-- 06_cpu_vs_gpu.py
+|       `-- 07_matrices_cpu_vs_gpu.py
 |-- .venv/                    # Entorno virtual local, no versionar
 |-- .gitignore
 `-- README.md
@@ -90,7 +99,7 @@ MiniAI/
 - Visual Studio Code
 - GPU NVIDIA compatible con CUDA para los experimentos que usen aceleracion
 
-La configuración de hardware y las comprobaciones previas del entorno están documentadas en la [memoria técnica](documentation/code%20docs/MiniAI_Memoria_Tecnica.md).
+La configuración de hardware y las comprobaciones previas del entorno están documentadas en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md).
 
 ## Instalacion
 
@@ -139,14 +148,30 @@ python src/fase2/01_red_xor.py
 
 Ambos ejercicios usan NumPy en CPU y no requieren CUDA. La gráfica de la red todavía muestra datos de prueba de Matplotlib; conectarla con `loss_history` es uno de los pendientes. Cerrar la ventana de la gráfica permite continuar con las impresiones posteriores a `plt.show()`.
 
+## Ejecutar la fase 3
+
+Con el entorno virtual activo y CUDA disponible:
+
+```bash
+python src/fase3/01_tensores_gpu.py
+python src/fase3/02_xor_pytorch.py
+python src/fase3/03_autograd_basico.py
+python src/fase3/04_gradientes_red.py
+python src/fase3/05_peso_antes_despues.py
+python src/fase3/06_cpu_vs_gpu.py
+python src/fase3/07_matrices_cpu_vs_gpu.py
+```
+
+Esta fase reimplementa XOR con PyTorch, usa `nn.Module`, `nn.Linear`, `MSELoss`, `loss.backward()` y `optimizer.step()`. También compara CPU y GPU; en matrices de `3000x3000`, la RTX 5050 fue aproximadamente **11-14x** más rápida que la CPU.
+
 ## Roadmap
 
 | Fase | Tema | Estado |
 | --- | --- | --- |
 | 0 | Preparar el laboratorio | Completada |
 | 1 | Neurona artificial desde cero | Ejercicios implementados |
-| 2 | Red neuronal desde cero | En curso |
-| 3 | PyTorch y entrenamiento con GPU | Pendiente |
+| 2 | Red neuronal desde cero | Trabajada |
+| 3 | PyTorch y entrenamiento con GPU | Completada |
 | 4 | Tokenización y embeddings | Pendiente |
 | 5 | Self-attention | Pendiente |
 | 6 | Construir un Transformer pequeño | Pendiente |
@@ -156,7 +181,7 @@ Ambos ejercicios usan NumPy en CPU y no requieren CUDA. La gráfica de la red to
 | 10 | MCP y arquitectura distribuida | Pendiente |
 | 11 | Consolidación y documentación | Pendiente |
 
-El detalle de tareas, criterios de salida y conceptos de cada fase está en el [plan de trabajo](documentation/code%20docs/MiniAI_Plan_de_Trabajo.md).
+El detalle de tareas, criterios de salida y conceptos de cada fase está en el [plan de trabajo](documentation/code%20docs/01_Plan_de_Trabajo.md).
 
 ## Principios del proyecto
 

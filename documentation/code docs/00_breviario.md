@@ -529,6 +529,99 @@ La GPU no vuelve más inteligente al modelo. Solamente permite realizar una gran
 
 ---
 
+## CUDA
+
+CUDA es la plataforma que permite usar una GPU NVIDIA para cálculos generales, como operaciones de PyTorch.
+
+En la Fase 3, PyTorch pudo usar la RTX 5050 cuando `torch.cuda.is_available()` devolvió `True`.
+
+---
+
+## Tensor
+
+Un tensor es una estructura numérica parecida a un arreglo de NumPy, pero preparada para trabajar con PyTorch y moverse entre CPU y GPU.
+
+```python
+x = torch.tensor([[0.0, 1.0]])
+x = x.to(device)
+```
+
+El `device` indica dónde vive el tensor: CPU o GPU.
+
+---
+
+## `nn.Module`
+
+`nn.Module` es la clase base que usa PyTorch para definir modelos.
+
+En la Fase 3, la red XOR se definió como una clase:
+
+```python
+class RedXOR(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.capa1 = nn.Linear(2, 2)
+        self.capa2 = nn.Linear(2, 1)
+```
+
+Esto permite que PyTorch registre los parámetros entrenables del modelo.
+
+---
+
+## `nn.Linear`
+
+`nn.Linear` representa una capa lineal con pesos y bias.
+
+```text
+salida = entrada * pesos + bias
+```
+
+En nuestra red XOR se usaron dos capas lineales: una de entrada a capa oculta y otra de capa oculta a salida.
+
+---
+
+## `MSELoss`
+
+`MSELoss` calcula el error cuadrático medio.
+
+Es una forma de medir la diferencia entre la salida del modelo y el valor esperado:
+
+```python
+criterio = nn.MSELoss()
+loss = criterio(output, y)
+```
+
+---
+
+## Autograd
+
+`autograd` es el sistema de PyTorch que calcula gradientes automáticamente.
+
+Cuando un tensor o parámetro participa en operaciones, PyTorch puede construir el historial necesario para calcular derivadas.
+
+```python
+loss.backward()
+```
+
+Esa llamada calcula los gradientes de los parámetros que participaron en la pérdida.
+
+---
+
+## Optimizer
+
+Un optimizador aplica los cambios a los parámetros usando los gradientes calculados.
+
+En la Fase 3 usamos descenso de gradiente estocástico:
+
+```python
+optimizer = torch.optim.SGD(modelo.parameters(), lr=0.5)
+optimizer.step()
+```
+
+La llamada `optimizer.step()` es el momento en que los pesos y bias cambian.
+
+---
+
 ## Red neuronal
 
 Una red neuronal se forma conectando varias neuronas.
