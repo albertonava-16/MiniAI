@@ -24,3 +24,4 @@ outputs/
 .DS_Store
 Thumbs.db
 desktop.ini
+*.png

@@ -146,20 +146,19 @@ for epoch in range(epochs):
 # GRAFICA DEL LOSS
 # ==========================================================
 
-import matplotlib.pyplot as plt
+print("\nLoss inicial:", loss_history[0])
+print("Loss final:", loss_history[-1])
 
-valores = [10, 8, 6, 4, 2, 1]
 
-plt.plot(valores)
-plt.title("Prueba de Matplotlib")
-plt.xlabel("Paso")
-plt.ylabel("Valor")
+plt.figure(figsize=(10, 6))
+plt.plot(loss_history)
+
+plt.xlabel("Época")
+plt.ylabel("Loss")
+plt.title("Loss durante el entrenamiento")
 plt.grid()
 
-plt.savefig("prueba_matplotlib.png")
-
-print("Se intentó guardar prueba_matplotlib.png")
-
+plt.savefig("loss_xor.png")
 plt.show()
 
 print("\n--- RECORRIDO DE UNA ENTRADA ---\n")
