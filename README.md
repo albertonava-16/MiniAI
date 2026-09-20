@@ -16,10 +16,22 @@ El proyecto avanza desde la matemática fundamental hasta una arquitectura capaz
 
 ## Estado actual
 
-- **Fase 0 - Laboratorio:** completada.
-- **Fase 1 - Neurona artificial:** en progreso.
-- **Implementado:** una neurona con función sigmoide y un ciclo de entrenamiento para aprender la función lógica AND.
-- **Siguiente paso:** ampliar el experimento hacia una red neuronal con varias capas.
+Avance registrado al 13 de septiembre de 2026, según la memoria técnica:
+
+- **Fase 0 - Laboratorio:** completada según las pruebas previas del entorno.
+- **Fase 1 - Neurona artificial:** implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión.
+- **Fase 2 - Red neuronal:** en curso, con una red XOR en NumPy y un ejercicio de backpropagation.
+- **Siguiente paso:** repasar backpropagation, conectar la gráfica con la pérdida real y comprobar las predicciones de XOR antes de pasar a PyTorch.
+
+## Documentación
+
+Los documentos siguen un formato común en Markdown, con secciones, ejemplos y enlaces de consulta:
+
+- [Memoria técnica](documentation/code%20docs/MiniAI_Memoria_Tecnica.md): entorno, comandos, diagnóstico y punto para retomar.
+- [Plan de trabajo](documentation/code%20docs/MiniAI_Plan_de_Trabajo.md): fases, tareas, criterios de salida y estimaciones.
+- [Breviario de conceptos](documentation/code%20docs/00_breviario.md): definiciones y ejemplos de los conceptos aprendidos.
+
+La memoria técnica y el plan se convirtieron de texto plano a Markdown. Las próximas actualizaciones se registrarán en estos archivos `.md`.
 
 ## Arquitectura objetivo
 
@@ -52,14 +64,19 @@ MiniAI
 
 ```text
 MiniAI/
-|-- datasets/                 # Datos y corpus para los experimentos
-|-- documentation/            # Plan de trabajo y memoria tecnica
-|-- models/                   # Modelos y checkpoints generados
-|-- notebooks/                # Experimentos interactivos
-|-- src/                      # Codigo fuente organizado por fases
-|   `-- fase1/
-|       |-- 01_neurona_basica.py
-|       `-- 02_neurona_entrenamiento.py
+|-- documentation/            # Plan, memoria técnica y breviario
+|   `-- code docs/
+|       |-- 00_breviario.md
+|       |-- MiniAI_Memoria_Tecnica.md
+|       `-- MiniAI_Plan_de_Trabajo.md
+|-- src/                      # Código fuente organizado por fases
+|   |-- fase1/
+|   |   |-- 01_neurona_basica.py
+|   |   |-- 02_neurona_entrenamiento.py
+|   |   `-- 03_frontera_decision.py
+|   `-- fase2/
+|       |-- 01_red_xor.py
+|       `-- 02_backprop_xor.py
 |-- .venv/                    # Entorno virtual local, no versionar
 |-- .gitignore
 `-- README.md
@@ -73,7 +90,7 @@ MiniAI/
 - Visual Studio Code
 - GPU NVIDIA compatible con CUDA para los experimentos que usen aceleracion
 
-La configuracion de hardware y las comprobaciones del entorno estan documentadas en [documentation/MiniAI_Memoria_Tecnica.txt](documentation/MiniAI_Memoria_Tecnica.txt).
+La configuración de hardware y las comprobaciones previas del entorno están documentadas en la [memoria técnica](documentation/code%20docs/MiniAI_Memoria_Tecnica.md).
 
 ## Instalacion
 
@@ -111,13 +128,24 @@ python src/fase1/02_neurona_entrenamiento.py
 
 El primer script muestra las predicciones y el error de una neurona con pesos definidos. El segundo entrena los pesos durante varias iteraciones y vuelve a evaluar las entradas de la función AND.
 
+## Retomar la fase 2
+
+Con el entorno virtual activo, ejecutar primero el ejercicio de backpropagation y después la red completa:
+
+```bash
+python src/fase2/02_backprop_xor.py
+python src/fase2/01_red_xor.py
+```
+
+Ambos ejercicios usan NumPy en CPU y no requieren CUDA. La gráfica de la red todavía muestra datos de prueba de Matplotlib; conectarla con `loss_history` es uno de los pendientes. Cerrar la ventana de la gráfica permite continuar con las impresiones posteriores a `plt.show()`.
+
 ## Roadmap
 
 | Fase | Tema | Estado |
 | --- | --- | --- |
 | 0 | Preparar el laboratorio | Completada |
-| 1 | Neurona artificial desde cero | En progreso |
-| 2 | Red neuronal desde cero | Pendiente |
+| 1 | Neurona artificial desde cero | Ejercicios implementados |
+| 2 | Red neuronal desde cero | En curso |
 | 3 | PyTorch y entrenamiento con GPU | Pendiente |
 | 4 | Tokenización y embeddings | Pendiente |
 | 5 | Self-attention | Pendiente |
@@ -128,7 +156,7 @@ El primer script muestra las predicciones y el error de una neurona con pesos de
 | 10 | MCP y arquitectura distribuida | Pendiente |
 | 11 | Consolidación y documentación | Pendiente |
 
-El detalle de tareas, checkpoints y conceptos de cada fase está en [documentation/MiniAI_Plan_de_Trabajo.txt](documentation/MiniAI_Plan_de_Trabajo.txt).
+El detalle de tareas, criterios de salida y conceptos de cada fase está en el [plan de trabajo](documentation/code%20docs/MiniAI_Plan_de_Trabajo.md).
 
 ## Principios del proyecto
 
