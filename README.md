@@ -23,7 +23,8 @@ Avance registrado al 26 de septiembre de 2026, según la memoria técnica y la c
 - **Fase 2 - Red neuronal:** trabajada con una red XOR en NumPy y un ejercicio de backpropagation.
 - **Fase 3 - PyTorch y GPU:** completada con tensores en CPU/GPU, XOR en PyTorch, `autograd`, gradientes reales, `optimizer.step()` y benchmarks CPU vs GPU.
 - **Fase 4 - Tokenización, embeddings y predicción:** completada con siete ejercicios, desde texto e IDs hasta modelos de siguiente token con contextos de uno y dos tokens.
-- **Siguiente paso:** comenzar la Fase 5, self-attention: Query, Key, Value y pesos de atención.
+- **Fase 5 - Attention:** completada con siete ejercicios, desde atención para un token hasta Multi-Head Causal Self-Attention con dos cabezas y proyección de salida.
+- **Siguiente paso:** comenzar la Fase 6, integrando atención, conexiones residuales, normalización, red feed-forward e información posicional en un Transformer.
 
 ## Documentación
 
@@ -87,14 +88,22 @@ MiniAI/
 |   |   |-- 05_peso_antes_despues.py
 |   |   |-- 06_cpu_vs_gpu.py
 |   |   `-- 07_matrices_cpu_vs_gpu.py
-|   `-- fase4/
-|       |-- 01_tokenizacion_basica.py
-|       |-- 02_encode_decode.py
-|       |-- 03_embeddings.py
-|       |-- 04_similitud_embeddings.py
-|       |-- 05_contexto_siguiente_token.py
-|       |-- 06_modelo_lenguaje_basico.py
-|       `-- 07_contexto_dos_tokens.py
+|   |-- fase4/
+|   |   |-- 01_tokenizacion_basica.py
+|   |   |-- 02_encode_decode.py
+|   |   |-- 03_embeddings.py
+|   |   |-- 04_similitud_embeddings.py
+|   |   |-- 05_contexto_siguiente_token.py
+|   |   |-- 06_modelo_lenguaje_basico.py
+|   |   `-- 07_contexto_dos_tokens.py
+|   `-- fase5/
+|       |-- 01_attention_intuicion.py
+|       |-- 02_query_key_value.py
+|       |-- 03_self_attention_todos_tokens.py
+|       |-- 04_scaled_dot_product_attention.py
+|       |-- 05_causal_attention.py
+|       |-- 06_attention_aprendible.py
+|       `-- 07_multi_head_attention.py
 |-- .venv/                    # Entorno virtual local, no versionar
 |-- .gitignore
 `-- README.md
@@ -195,6 +204,28 @@ Un contexto como `el perro` admite `come` y `duerme` en el corpus: la red aprend
 
 El detalle de los ejercicios, sus límites y el bloqueo de `shm.dll` resuelto durante la fase están en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token).
 
+## Ejecutar la fase 5
+
+Desde la raíz del repositorio, con el entorno virtual activo:
+
+```bash
+python src/fase5/01_attention_intuicion.py
+python src/fase5/02_query_key_value.py
+python src/fase5/03_self_attention_todos_tokens.py
+python src/fase5/04_scaled_dot_product_attention.py
+python src/fase5/05_causal_attention.py
+python src/fase5/06_attention_aprendible.py
+python src/fase5/07_multi_head_attention.py
+```
+
+Los siete ejercicios usan PyTorch en CPU y embeddings definidos manualmente. El recorrido es `Q/K/V → QKᵀ → escalado → máscara causal → softmax → combinación de V`. El último ejercicio combina dos cabezas, concatena sus salidas y aplica una proyección final.
+
+Con tres tokens, `embedding_dim=4` y `num_heads=2`, cada cabeza trabaja con `head_dim=2`. La salida final conserva la forma `[3, 4]` y los tokens futuros reciben peso cero.
+
+Los módulos de los ejercicios 06 y 07 tienen parámetros entrenables, pero estos scripts solo ejecutan el forward: no incluyen pérdida, backpropagation ni optimizador. Las distribuciones distintas de las cabezas muestran el funcionamiento del mecanismo con su inicialización aleatoria, no una especialización aprendida.
+
+Los archivos, dimensiones y resultados reportados se detallan en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-5-attention).
+
 ## Roadmap
 
 | Fase | Tema | Estado |
@@ -204,7 +235,7 @@ El detalle de los ejercicios, sus límites y el bloqueo de `shm.dll` resuelto du
 | 2 | Red neuronal desde cero | Trabajada |
 | 3 | PyTorch y entrenamiento con GPU | Completada |
 | 4 | Tokenización, embeddings y predicción de siguiente token | Completada |
-| 5 | Self-attention | Pendiente |
+| 5 | Self-attention causal y multi-head attention | Completada |
 | 6 | Construir un Transformer pequeño | Pendiente |
 | 7 | Entrenar MiniAI | Pendiente |
 | 8 | Convertir MiniAI en servicio | Pendiente |

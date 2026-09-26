@@ -7,7 +7,7 @@ La intención es avanzar por fases, entender cada componente y registrar resulta
 **Duración estimada total:** 44–60 horas, según la suma de las fases.  
 **Último avance registrado:** 26 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 5, self-attention.
+**Punto para retomar:** Fase 6, construir nuestro Transformer.
 
 Documentos relacionados: [memoria técnica](02_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -72,22 +72,22 @@ El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-
 | 2. Red neuronal | Trabajada: red XOR con NumPy y ejercicio de backpropagation. |
 | 3. PyTorch y GPU | Completada: tensores, CUDA, XOR en PyTorch, gradientes reales, optimizador y benchmark CPU vs GPU. |
 | 4. Tokenización y embeddings | Completada: siete ejercicios ejecutados por el autor, incluyendo predicción con uno y dos tokens de contexto. |
-| 5–11 | Pendientes en el registro de avance. |
+| 5. Attention | Completada: siete ejercicios, máscara causal, proyecciones entrenables y dos cabezas con proyección final. |
+| 6–11 | Pendientes en el registro de avance. |
 
-Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución.
+Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución. La Fase 5 se cierra con la confirmación del autor, sus resultados de ejemplo y la revisión de los siete scripts de `src/fase5`; sus módulos de atención se ejecutan sin un ciclo de entrenamiento.
 
 ### Primera tarea al retomar
 
-Comenzar la [Fase 5](#fase-5-self-attention), partiendo de los embeddings y del contexto de dos tokens construidos en la Fase 4.
+Comenzar la [Fase 6](#fase-6-construir-nuestro-transformer) a partir de `MultiHeadAttention` del ejercicio 07 de Fase 5.
 
-Después:
+- [ ] Repasar la salida `[seq_len, embedding_dim]` y la máscara causal.
+- [ ] Añadir conexiones residuales y normalización por capa.
+- [ ] Incorporar una red feed-forward por posición.
+- [ ] Añadir embeddings de tokens e información posicional.
+- [ ] Integrar las piezas en un bloque Transformer y comprobar sus dimensiones.
 
-- [ ] Repasar las formas de los tensores de contexto y embeddings.
-- [ ] Construir Query, Key y Value a partir de los embeddings.
-- [ ] Calcular `QK^T`, escalar por la raíz de la dimensión de las keys y aplicar softmax.
-- [ ] Combinar los values e inspeccionar los pesos de atención.
-
-Los comandos para comenzar están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido).
+Los comandos para repasar la atención están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido).
 
 ---
 
@@ -102,7 +102,7 @@ Los tiempos son estimaciones de dedicación por fase, no horas medidas ni fechas
 | 2 | Red neuronal | 4–5 h | Trabajada |
 | 3 | PyTorch y GPU | 3–4 h | Completada |
 | 4 | Tokenización, embeddings y predicción de siguiente token | 4–5 h | Completada |
-| 5 | Self-attention | 5–6 h | Pendiente |
+| 5 | Self-attention causal y multi-head attention | 5–6 h | Completada |
 | 6 | Transformer | 6–8 h | Pendiente |
 | 7 | Entrenamiento de MiniAI | 4–6 h | Pendiente |
 | 8 | API e interfaz | 3–4 h | Pendiente |
@@ -438,48 +438,74 @@ Podemos convertir texto a tokens, embeddings y objetivos de entrenamiento, entre
 
 ### Resultado alcanzado y siguiente fase
 
-Primer flujo de procesamiento y predicción de lenguaje completado. La Fase 5 incorporará atención para calcular pesos sobre el contexto según su contenido; el modelo actual concatena embeddings y usa una capa lineal.
+Primer flujo de procesamiento y predicción de lenguaje completado. La Fase 5 incorpora atención para calcular pesos sobre el contexto según su contenido; el modelo de Fase 4 concatena embeddings y usa una capa lineal.
 
 ---
 
 ## Fase 5: Self-attention
 
-**Estado:** pendiente.  
-**Tiempo estimado:** 5–6 horas.
+**Estado:** completada el 26 de septiembre de 2026, según la confirmación del autor.
+
+**Tiempo estimado:** 5–6 horas; no se midió la duración real.
 
 ### Objetivo
 
-Construir el mecanismo central de los Transformers.
+Entender y construir el mecanismo de atención para combinar información de una secuencia y producir representaciones contextualizadas.
 
-### Tareas
+### Tareas completadas
 
-- Introducir Query, Key y Value.
-- Implementar el producto `QK^T`.
-- Aplicar escalamiento.
-- Aplicar softmax.
-- Multiplicar por `V`.
-- Visualizar los pesos de atención.
-- Introducir una máscara causal (`causal masking`).
-- Implementar una cabeza de atención.
-- Evolucionar a atención con múltiples cabezas (`multi-head attention`).
+- [x] Calcular atención para un token mediante producto punto y suma ponderada.
+- [x] Introducir Query, Key y Value con matrices manuales.
+- [x] Implementar `Q @ K.T` para todos los tokens.
+- [x] Escalar los scores por `sqrt(d_k)` y aplicar softmax por fila.
+- [x] Combinar los values mediante `pesos @ V`.
+- [x] Inspeccionar los pesos de atención impresos en la terminal.
+- [x] Bloquear posiciones futuras con una máscara causal antes del softmax.
+- [x] Crear proyecciones entrenables con `nn.Linear(..., bias=False)`.
+- [x] Implementar múltiples cabezas, concatenar sus salidas y proyectar el resultado.
+
+La inspección se hizo con matrices impresas; no hay un mapa de calor implementado. Los módulos tienen parámetros entrenables, pero estos ejercicios no incluyen entrenamiento.
+
+### Ejercicios implementados y ejecutados
+
+| Archivo | Propósito |
+| --- | --- |
+| [01_attention_intuicion.py](../../src/fase5/01_attention_intuicion.py) | Usar `come` como query, calcular scores y combinar embeddings. |
+| [02_query_key_value.py](../../src/fase5/02_query_key_value.py) | Separar Q, K y V usando matrices identidad. |
+| [03_self_attention_todos_tokens.py](../../src/fase5/03_self_attention_todos_tokens.py) | Calcular atención de todos los tokens en una sola operación matricial. |
+| [04_scaled_dot_product_attention.py](../../src/fase5/04_scaled_dot_product_attention.py) | Escalar por la raíz de la dimensión de las keys. |
+| [05_causal_attention.py](../../src/fase5/05_causal_attention.py) | Aplicar una máscara triangular superior con `-inf` antes del softmax. |
+| [06_attention_aprendible.py](../../src/fase5/06_attention_aprendible.py) | Encapsular atención causal en `CausalSelfAttention` con parámetros entrenables. |
+| [07_multi_head_attention.py](../../src/fase5/07_multi_head_attention.py) | Construir dos `AttentionHead`, registrarlas con `ModuleList`, concatenar y proyectar. |
 
 ### Ecuación principal
 
 ```text
-Attention(Q, K, V) = softmax(QK^T / sqrt(d)) V
+Attention(Q, K, V) = softmax(QKᵀ / sqrt(d_k) + M) V
+
+M[i, j] = 0     si j <= i
+M[i, j] = -inf  si j > i
 ```
+
+La máscara `M` representa la variante causal. En los ejercicios se aplica mediante `masked_fill`.
+
+### Registro del hito completado
+
+La implementación final recibe tres embeddings de dimensión 4. Usa dos cabezas de dimensión 2, produce una matriz de pesos `[3, 3]` por cabeza y conserva una salida final `[3, 4]` tras concatenación y proyección.
+
+El autor reportó, para la fila de `perro`, pesos `[0.5621, 0.4379, 0.0000]` y `[0.4425, 0.5575, 0.0000]` en las dos cabezas. Son resultados de ejemplo de una ejecución: los pesos dependen de la inicialización aleatoria y no demuestran relaciones semánticas aprendidas. El cero en la posición de `come` corresponde a la máscara causal.
 
 ### Conceptos clave
 
-Query, Key, Value, puntuación de atención (`attention score`), softmax, máscara causal, cabeza de atención y multi-head attention.
+Attention, self-attention, Query, Key, Value, producto punto, scores, softmax, escalado, máscara causal, parámetros entrenables, representación contextualizada, múltiples cabezas y proyección de salida.
 
-### Criterio de salida
+### Criterio de salida alcanzado
 
-Podemos inspeccionar cómo un token asigna importancia a otros tokens.
+Podemos inspeccionar cómo cada posición combina información de las posiciones permitidas y seguir las dimensiones desde los embeddings hasta la salida de múltiples cabezas.
 
-### Resultado esperado
+### Resultado alcanzado y siguiente fase
 
-Comprender qué hace la atención y por qué es relevante para el modelo.
+Multi-Head Causal Self-Attention implementada y ejecutada. La [Fase 6](#fase-6-construir-nuestro-transformer) la integrará con conexiones residuales, LayerNorm, una red feed-forward e información posicional para formar un bloque Transformer.
 
 ---
 

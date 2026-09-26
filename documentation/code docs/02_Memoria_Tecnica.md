@@ -6,9 +6,9 @@ La intención es tener una referencia rápida para retomar el proyecto después 
 
 **Último avance registrado:** 26 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 5, self-attention.
+**Punto para retomar:** Fase 6, construir nuestro Transformer.
 
-Las versiones y los resultados de GPU se conservan como registro del entorno anterior. La actualización de Fase 4 recoge la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevas pérdidas, tiempos ni resultados de CUDA.
+Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4 y 5 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevas pérdidas, tiempos ni resultados de CUDA.
 
 Documentos relacionados: [plan de trabajo](01_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -28,6 +28,7 @@ Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas act
 - [PyTorch y CUDA](#pytorch-y-cuda)
 - [Avance de la Fase 3](#avance-de-la-fase-3)
 - [Fase 4: Tokenización, embeddings y predicción de siguiente token](#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token)
+- [Fase 5: Attention](#fase-5-attention)
 - [Primera prueba de GPU](#primera-prueba-de-gpu)
 - [Rutina para retomar el proyecto](#rutina-para-retomar-el-proyecto)
 - [Comandos de diagnóstico](#comandos-de-diagnóstico)
@@ -48,13 +49,13 @@ code .
 
 Confirmar que aparezca `(.venv)` al inicio de la terminal.
 
-La Fase 4 está completada y el siguiente trabajo es self-attention. Para repasar el último modelo antes de comenzar la Fase 5:
+La Fase 5 está completada y el siguiente trabajo es construir un bloque Transformer. Para repasar la atención con múltiples cabezas antes de comenzar la Fase 6:
 
 ```bash
-python src/fase4/07_contexto_dos_tokens.py
+python src/fase5/07_multi_head_attention.py
 ```
 
-Este script vuelve a entrenar desde cero en cada ejecución. Usa CUDA si está disponible y, en caso contrario, CPU. La lista de los siete ejercicios está en [Fase 4](#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token).
+Este script ejecuta un forward en CPU con parámetros inicializados aleatoriamente, imprime la salida `[3, 4]` y los pesos de cada cabeza. No entrena ni requiere CUDA. La lista de ejercicios está en [Fase 5](#fase-5-attention).
 
 Para repasar el ejercicio de backpropagation de la Fase 2:
 
@@ -103,7 +104,8 @@ La fecha de corte del avance es el **26 de septiembre de 2026**.
 | 2. Red neuronal | Trabajada | Red XOR con NumPy y ejercicio de backpropagation. |
 | 3. PyTorch y GPU | Completada | Tensores en CPU/GPU, CUDA, XOR en PyTorch, autograd, gradientes, optimizador y benchmark. |
 | 4. Tokenización y embeddings | Completada | Texto e IDs, embeddings, similitud coseno y modelos de siguiente token con contextos de uno y dos tokens. |
-| 5. Self-attention | Pendiente; siguiente fase | Query, Key, Value, puntuaciones y pesos de atención. |
+| 5. Attention | Completada | Q/K/V, escalado, máscara causal, proyecciones entrenables y multi-head attention. |
+| 6. Transformer | Pendiente; siguiente fase | Atención, conexiones residuales, normalización, red feed-forward e información posicional. |
 
 ### Avance de la Fase 1
 
@@ -214,11 +216,11 @@ La diferencia se nota en matrices grandes porque la GPU puede ejecutar muchas mu
 
 ### Punto para retomar
 
-La siguiente fase es la [Fase 5 del plan](01_Plan_de_Trabajo.md#fase-5-self-attention): self-attention.
+La siguiente fase es la [Fase 6 del plan](01_Plan_de_Trabajo.md#fase-6-construir-nuestro-transformer): construir nuestro Transformer.
 
-Partir de los embeddings del contexto y construir Query, Key y Value. Después, calcular puntuaciones con `QK^T`, escalarlas, aplicar softmax y usar los pesos obtenidos para combinar los values. Más adelante se incorporarán máscara causal y múltiples cabezas.
+Partir de `MultiHeadAttention` en `src/fase5/07_multi_head_attention.py`. Incorporar conexiones residuales, normalización por capa, una red feed-forward por posición y embeddings posicionales. Después, integrar bloques y una salida sobre el vocabulario para avanzar hacia MiniGPT.
 
-El modelo actual conserva el orden al concatenar embeddings y puede aprender pesos distintos para cada posición. Todavía no calcula pesos de atención que dependan del contenido del contexto.
+La atención actual procesa una sola secuencia de forma `[seq_len, embedding_dim]`. Al añadir lotes habrá que adaptar las operaciones y transposiciones; todavía no existe una dimensión de batch en estos módulos.
 
 ---
 
@@ -368,6 +370,138 @@ El incidente de Windows ocurrido en esta fase se conserva en [WinError 4551 al i
 
 ---
 
+## Fase 5: Attention
+
+**Cierre registrado:** 26 de septiembre de 2026. El autor confirmó la fase completada y compartió resultados de ejemplo. Esta sección contrasta ese contexto con los siete scripts de `src/fase5`.
+
+### Objetivo y alcance
+
+Construir atención desde operaciones elementales hasta Multi-Head Causal Self-Attention. Los tokens de ejemplo son `el`, `perro` y `come`.
+
+Los siete scripts usan embeddings definidos manualmente y se ejecutan en CPU tal como están escritos. No cargan la tabla de embeddings entrenada en Fase 4. Los ejercicios 01–05 usan tensores fijos; 06 y 07 crean capas con parámetros entrenables, pero solo calculan e imprimen el forward. No hay targets, loss, optimizador ni actualizaciones de pesos.
+
+### Progresión de los ejercicios
+
+| Archivo | Implementación | Resultado que se inspecciona |
+| --- | --- | --- |
+| [01_attention_intuicion.py](../../src/fase5/01_attention_intuicion.py) | Usa el embedding de `come` como query; compara con todos los embeddings y calcula una suma ponderada. | Scores, pesos y vector de salida para un token. |
+| [02_query_key_value.py](../../src/fase5/02_query_key_value.py) | Define `W_Q`, `W_K` y `W_V` como matrices identidad y calcula Q, K y V. | Separación conceptual de las tres funciones aunque sus valores coincidan. |
+| [03_self_attention_todos_tokens.py](../../src/fase5/03_self_attention_todos_tokens.py) | `Q @ K.T`, softmax por fila y `pesos_attention @ V`. | Una salida contextualizada para cada posición, sin máscara. |
+| [04_scaled_dot_product_attention.py](../../src/fase5/04_scaled_dot_product_attention.py) | Divide los scores por `sqrt(d_k)` antes del softmax. | Scores escalados y distribución de atención. |
+| [05_causal_attention.py](../../src/fase5/05_causal_attention.py) | Máscara triangular superior y `masked_fill(mask, -inf)`. | Peso cero en todas las posiciones futuras. |
+| [06_attention_aprendible.py](../../src/fase5/06_attention_aprendible.py) | Clase `CausalSelfAttention` con tres capas `nn.Linear(2, 2, bias=False)`. | Salida `[3, 2]` y pesos `[3, 3]` con parámetros aleatorios entrenables. |
+| [07_multi_head_attention.py](../../src/fase5/07_multi_head_attention.py) | Clases `AttentionHead` y `MultiHeadAttention`, dos cabezas y proyección final. | Salida `[3, 4]` y dos matrices de pesos `[3, 3]`. |
+
+### Atención para un token y para toda la secuencia
+
+En 01–05, los embeddings manuales son:
+
+```text
+el    → [1, 0]
+perro → [0, 1]
+come  → [1, 1]
+```
+
+En el ejercicio 01, la query de `come` produce scores `[1, 1, 2]` y softmax aproximadamente `[0.2119, 0.2119, 0.5761]`. La suma ponderada produce un vector cercano a `[0.7881, 0.7881]`. Estos números se derivan de los tensores fijos; no son relaciones semánticas aprendidas. En particular, `el` y `perro` reciben el mismo peso en este ejemplo.
+
+Con Q, K y V de toda la secuencia, `Q @ K.T` crea una matriz `[3, 3]`. La fila indica la posición que consulta y la columna indica la posición consultada. Los scores son puntuaciones sin normalizar; se convierten en pesos al aplicar softmax por fila, sobre las keys.
+
+En las matrices manuales se escribe `Q = X @ W_Q`. Con `nn.Linear`, PyTorch calcula la entrada por la transpuesta del atributo `weight` y añade bias si existe; en las proyecciones Q/K/V de estos ejercicios el bias está desactivado.
+
+### Escalado y máscara causal
+
+La variante escalada divide por la raíz de la dimensión de las keys, no por la cantidad de tokens:
+
+```text
+scores = QKᵀ / sqrt(d_k)
+pesos = softmax(scores con máscara, por fila)
+salida = pesos @ V
+```
+
+El escalado reduce la tendencia de los productos punto a crecer con la dimensión y producir distribuciones excesivamente concentradas.
+
+La máscara usa `torch.triu(..., diagonal=1).bool()`:
+
+```text
+          el     perro  come
+el        False  True   True
+perro     False  False  True
+come      False  False  False
+```
+
+`True` marca una posición bloqueada. Antes del softmax se sustituye su score por `-inf`; su exponencial es cero. Como cada fila conserva al menos la posición propia, puede normalizarse sin que toda la fila quede bloqueada.
+
+Así, `el` solo consulta `el`; `perro` consulta `el` y `perro`; `come` consulta las tres posiciones. La diagonal permanece visible. Los pesos de cada fila suman aproximadamente 1 y los futuros tienen peso cero.
+
+### Parámetros entrenables y múltiples cabezas
+
+En 06, `W_Q`, `W_K` y `W_V` son capas de un `nn.Module`. Sus pesos están registrados para que autograd pueda calcular gradientes si se conecta una pérdida y se llama a `backward()`. El script no realiza ese paso.
+
+En 07, cada cabeza recibe los cuatro componentes del embedding y tiene sus propias proyecciones `Linear(4, 2, bias=False)`. No se limita a tomar una mitad fija del embedding. `nn.ModuleList` registra las cabezas como submódulos, incluyendo sus parámetros.
+
+| Etapa | Forma en el ejemplo 07 |
+| --- | --- |
+| Embeddings de entrada | `[3, 4]` |
+| Número de cabezas | 2 |
+| Dimensión por cabeza | `4 // 2 = 2` |
+| Q, K y V por cabeza | `[3, 2]` |
+| Scores y pesos por cabeza | `[3, 3]` |
+| Salida por cabeza | `[3, 2]` |
+| `torch.cat(salidas, dim=1)` | `[3, 4]` |
+| Proyección `nn.Linear(4, 4)` | `[3, 4]` |
+
+El constructor comprueba `embedding_dim % num_heads == 0`. Cada cabeza escala por `sqrt(head_dim)`. La proyección final mezcla las características concatenadas y sí incluye bias, porque usa el valor predeterminado de `nn.Linear`.
+
+```text
+Embeddings [3, 4]
+  ├─ Cabeza 1: Q/K/V → scores / sqrt(2) → máscara → softmax → pesos @ V [3, 2]
+  └─ Cabeza 2: Q/K/V → scores / sqrt(2) → máscara → softmax → pesos @ V [3, 2]
+          ↓
+Concatenación [3, 4] → proyección Linear(4, 4) → salida [3, 4]
+```
+
+### Resultado reportado y cómo interpretarlo
+
+El autor reportó una salida de tres tokens por cuatro dimensiones y estas filas de pesos para `perro`:
+
+| Cabeza | Atención a el | Atención a perro | Atención a come |
+| --- | ---: | ---: | ---: |
+| 1 | 0.5621 | 0.4379 | 0.0000 |
+| 2 | 0.4425 | 0.5575 | 0.0000 |
+
+Los valores proceden del contexto compartido por el autor, no de una nueva ejecución al editar la documentación. Ambas filas suman 1 con el redondeo mostrado y respetan el bloqueo del futuro. Las cabezas pueden producir distribuciones distintas por tener parámetros independientes; aquí esos parámetros se inicializan aleatoriamente y no se han optimizado.
+
+La representación es contextualizada porque combina values de las posiciones permitidas. Esto no demuestra por sí solo comprensión del lenguaje ni especialización semántica de las cabezas.
+
+### Límites y siguiente fase
+
+- No se fija una semilla en 06 ni 07; sus números pueden cambiar entre ejecuciones.
+- No hay entrenamiento, validación ni métricas de pérdida en esta fase.
+- Los embeddings son manuales y no hay tokenizador integrado.
+- Se procesa una sola secuencia de forma `[seq_len, embedding_dim]`, sin dimensión de batch.
+- No hay embeddings posicionales, conexiones residuales, LayerNorm ni red feed-forward.
+- No existe una salida sobre el vocabulario ni generación de texto integrada con atención.
+
+La Fase 6 integrará esos componentes para construir un bloque Transformer y avanzar hacia MiniGPT. La Fase 5 queda completada como construcción y comprensión del mecanismo de atención.
+
+### Comandos para repetir la fase
+
+Desde la raíz del proyecto, con `.venv` activo:
+
+```bash
+python src/fase5/01_attention_intuicion.py
+python src/fase5/02_query_key_value.py
+python src/fase5/03_self_attention_todos_tokens.py
+python src/fase5/04_scaled_dot_product_attention.py
+python src/fase5/05_causal_attention.py
+python src/fase5/06_attention_aprendible.py
+python src/fase5/07_multi_head_attention.py
+```
+
+Cada script es independiente. La máscara de 06 y 07 se crea en `x.device`, pero los ejemplos no trasladan el modelo ni los datos a GPU.
+
+---
+
 ## Equipo principal
 
 La laptop principal es una **Lenovo LOQ**.
@@ -440,14 +574,22 @@ MiniAI/
 │   │   ├── 05_peso_antes_despues.py
 │   │   ├── 06_cpu_vs_gpu.py
 │   │   └── 07_matrices_cpu_vs_gpu.py
-│   └── fase4/
-│       ├── 01_tokenizacion_basica.py
-│       ├── 02_encode_decode.py
-│       ├── 03_embeddings.py
-│       ├── 04_similitud_embeddings.py
-│       ├── 05_contexto_siguiente_token.py
-│       ├── 06_modelo_lenguaje_basico.py
-│       └── 07_contexto_dos_tokens.py
+│   ├── fase4/
+│   │   ├── 01_tokenizacion_basica.py
+│   │   ├── 02_encode_decode.py
+│   │   ├── 03_embeddings.py
+│   │   ├── 04_similitud_embeddings.py
+│   │   ├── 05_contexto_siguiente_token.py
+│   │   ├── 06_modelo_lenguaje_basico.py
+│   │   └── 07_contexto_dos_tokens.py
+│   └── fase5/
+│       ├── 01_attention_intuicion.py
+│       ├── 02_query_key_value.py
+│       ├── 03_self_attention_todos_tokens.py
+│       ├── 04_scaled_dot_product_attention.py
+│       ├── 05_causal_attention.py
+│       ├── 06_attention_aprendible.py
+│       └── 07_multi_head_attention.py
 ├── .venv/
 ├── .gitignore
 └── README.md

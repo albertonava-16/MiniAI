@@ -4,7 +4,7 @@ Este documento reúne los conceptos aprendidos durante la construcción de MiniA
 
 La intención no es memorizar todas las definiciones, sino tener una referencia rápida que podamos ampliar conforme avance el proyecto.
 
-**Última ampliación:** 26 de septiembre de 2026, [conceptos de la Fase 4](#fase-4-del-texto-a-la-predicción). Los ejercicios y su configuración están en la [memoria técnica](02_Memoria_Tecnica.md#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token).
+**Última ampliación:** 26 de septiembre de 2026, [conceptos de la Fase 5](#fase-5-attention-y-representaciones-contextualizadas). También se conservan los [conceptos de la Fase 4](#fase-4-del-texto-a-la-predicción). Los ejercicios y resultados de atención están en la [memoria técnica](02_Memoria_Tecnica.md#fase-5-attention).
 
 ---
 
@@ -918,6 +918,185 @@ Los scripts actuales de Fase 4 no incluyen esa línea. La semilla ayuda a repeti
 
 ## Puente hacia attention
 
-El modelo de dos tokens concatena embeddings y aplica una capa lineal. Self-attention permitirá calcular cuánto contribuye cada token al combinar información del contexto, usando pesos que dependen de su contenido.
+El modelo de dos tokens de Fase 4 concatena embeddings y aplica una capa lineal. Self-attention, construida en Fase 5, calcula pesos que dependen del contenido para combinar información del contexto.
 
-La [Fase 5](01_Plan_de_Trabajo.md#fase-5-self-attention) introducirá Query, Key, Value, puntuaciones de atención, softmax, máscara causal y múltiples cabezas. Estos componentes todavía no están implementados en los ejercicios de Fase 4.
+La [Fase 5](01_Plan_de_Trabajo.md#fase-5-self-attention) introdujo Query, Key, Value, puntuaciones de atención, softmax, máscara causal y múltiples cabezas en ejercicios independientes. La integración en un Transformer corresponde a la Fase 6.
+
+---
+
+## Fase 5: Attention y representaciones contextualizadas
+
+La atención produce una representación para cada posición combinando información de otras posiciones permitidas. El recorrido aprendido es:
+
+```text
+Embeddings → Q/K/V → scores → escalado → máscara causal
+          → softmax → pesos @ V → salida por cabeza
+          → concatenación de cabezas → proyección final
+```
+
+## Attention y representación contextualizada
+
+Attention calcula pesos para combinar vectores de información. Una representación contextualizada depende tanto del token que consulta como de los tokens a los que puede atender.
+
+En el ejemplo `el perro come`, la posición de `come` combina información de las tres posiciones. Cuánto aporta cada una depende de sus queries, keys y values; no está fijado por el significado que una persona atribuye a las palabras.
+
+En estos ejercicios los embeddings son manuales y las proyecciones finales no se entrenan. La contextualización describe el cálculo realizado, no una comprensión semántica demostrada.
+
+---
+
+## Query, Key y Value
+
+| Representación | Intuición | Función matemática |
+| --- | --- | --- |
+| Query (Q) | Qué busco. | Se compara con las keys. |
+| Key (K) | Cómo puedo ser encontrado. | Determina el score frente a cada query. |
+| Value (V) | Qué información aporto. | Se combina usando los pesos de atención. |
+
+Se obtienen mediante proyecciones:
+
+```text
+Q = X W_Q
+K = X W_K
+V = X W_V
+```
+
+Las matrices de 02–05 son identidades fijas, por eso Q, K y V coinciden numéricamente con los embeddings aunque sus funciones sean distintas. En 06 y 07 se usan capas `nn.Linear(..., bias=False)` con parámetros entrenables.
+
+---
+
+## Producto punto y scores de atención
+
+El producto punto suma los productos de las componentes correspondientes. Para una query y una key devuelve un score:
+
+```text
+score(q, k) = suma_i(q_i * k_i)
+```
+
+Depende tanto de la dirección como de la magnitud; no equivale a la similitud coseno normalizada.
+
+Para toda la secuencia, `Q @ K.T` produce `[seq_len, seq_len]`. La fila corresponde a la query y la columna a la key. Un score mayor recibe más peso tras softmax dentro de esa fila, pero los scores originales todavía no son probabilidades.
+
+---
+
+## Softmax en atención
+
+Softmax convierte los scores de una query en pesos sobre las posiciones consultadas. En los ejercicios de una query se aplica sobre `dim=0`; en la matriz de queries se aplica por fila con `dim=1`.
+
+```text
+scores [1, 1, 2] → pesos [0.2119, 0.2119, 0.5761]
+```
+
+Los pesos suman aproximadamente 1. Después se usan para sumar los values: `salida = pesos @ V`.
+
+En Fase 4, softmax distribuía probabilidad entre tokens del vocabulario. Aquí distribuye peso entre posiciones del contexto. Los pesos de atención no son probabilidades del siguiente token.
+
+---
+
+## Self-attention
+
+Self-attention significa que Q, K y V proceden de la misma secuencia. Todas sus posiciones generan queries y consultan keys de esa secuencia.
+
+Sin máscara, cada posición puede consultar todas las posiciones. Con máscara causal, cada una consulta solamente su posición y las anteriores.
+
+---
+
+## Scaled dot-product attention
+
+La atención de producto punto escalado usa:
+
+```text
+Attention(Q, K, V) = softmax(QKᵀ / sqrt(d_k)) V
+```
+
+`d_k` es la dimensión de las keys de una cabeza. Dividir por su raíz reduce el crecimiento de los scores asociado a la dimensión y ayuda a evitar un softmax demasiado concentrado.
+
+En la implementación de dos cabezas, `embedding_dim=4` y `head_dim=2`: cada cabeza divide por `sqrt(2)`, no por `sqrt(4)` ni por la raíz del número de tokens.
+
+---
+
+## Máscara causal
+
+La máscara causal impide que una posición consulte tokens posteriores:
+
+```text
+el    → el
+perro → el, perro
+come  → el, perro, come
+```
+
+El código construye una máscara triangular superior con `diagonal=1`. Los valores `True` indican posiciones bloqueadas:
+
+```text
+False  True   True
+False  False  True
+False  False  False
+```
+
+Se sustituyen esos scores por `-inf` antes del softmax. Como `exp(-inf)=0`, reciben peso cero al normalizar junto con las posiciones válidas. La diagonal queda disponible, de modo que ninguna fila del ejemplo queda completamente bloqueada.
+
+---
+
+## Parámetro entrenable frente a parámetro entrenado
+
+Un parámetro entrenable está preparado para recibir gradientes y actualizaciones. Un parámetro entrenado ya ha pasado por ese proceso.
+
+Las capas Q/K/V de 06 y 07 son entrenables, pero los scripts solo ejecutan el forward. Para ajustarlas haría falta conectar la salida con una tarea, calcular una pérdida, llamar a `backward()` y actualizar con un optimizador.
+
+Que aparezca un `grad_fn` en un tensor indica que autograd registra operaciones; no significa que se haya entrenado el modelo.
+
+---
+
+## Multi-head attention
+
+Multi-head attention calcula varias atenciones con proyecciones independientes. Cada cabeza puede aprender relaciones diferentes durante un entrenamiento posterior; la arquitectura no garantiza que esas relaciones sean distintas o tengan una interpretación lingüística específica.
+
+En el ejercicio 07:
+
+```text
+embedding_dim = 4
+num_heads = 2
+head_dim = 2
+```
+
+Cada cabeza recibe el embedding completo de cuatro dimensiones y lo proyecta a dos dimensiones. No se divide el vector original en dos mitades fijas. Se exige que `embedding_dim` sea divisible entre `num_heads`.
+
+---
+
+## ModuleList, concatenación y proyección de salida
+
+`nn.ModuleList` registra las cabezas como submódulos, permitiendo que PyTorch incluya sus parámetros al consultar `modelo.parameters()`.
+
+`torch.cat(salidas, dim=1)` junta las características de las cabezas para cada token:
+
+```text
+Cabeza 1 [3, 2] + cabeza 2 [3, 2]
+           → concatenación [3, 4]
+           → Linear(4, 4)
+           → salida final [3, 4]
+```
+
+La concatenación por sí sola no mezcla las características; la proyección lineal posterior aprende a combinarlas cuando se entrena. Conservar la forma facilita integrar una conexión residual en la siguiente fase.
+
+---
+
+## Leer una matriz de atención
+
+Cada fila responde a «para esta posición, cuánto peso recibe cada posición del contexto». Por ejemplo, los pesos reportados para `perro` fueron:
+
+```text
+         el      perro   come
+Head 1   0.5621  0.4379  0.0000
+Head 2   0.4425  0.5575  0.0000
+```
+
+El último cero demuestra el bloqueo de la posición futura en esas filas. Las diferencias entre cabezas son compatibles con sus parámetros independientes y aleatorios. No demuestran que una cabeza haya aprendido una relación semántica concreta.
+
+La salida contextualizada contiene la combinación de los values; no debe confundirse con la matriz de pesos usada para calcularla.
+
+---
+
+## Puente hacia el Transformer
+
+La [Fase 6](01_Plan_de_Trabajo.md#fase-6-construir-nuestro-transformer) integrará la atención con conexiones residuales, Layer Normalization, una red feed-forward e información posicional.
+
+La Fase 5 deja listo el mecanismo de atención para una secuencia. Todavía faltan esos componentes, una salida sobre el vocabulario y la integración del entrenamiento para construir el modelo de lenguaje con Transformer.
