@@ -4,6 +4,8 @@ Este documento reúne los conceptos aprendidos durante la construcción de MiniA
 
 La intención no es memorizar todas las definiciones, sino tener una referencia rápida que podamos ampliar conforme avance el proyecto.
 
+**Última ampliación:** 26 de septiembre de 2026, [conceptos de la Fase 4](#fase-4-del-texto-a-la-predicción). Los ejercicios y su configuración están en la [memoria técnica](02_Memoria_Tecnica.md#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token).
+
 ---
 
 ## Inteligencia artificial
@@ -693,3 +695,229 @@ actualización de parámetros
     ↓
 nueva predicción
 ```
+
+---
+
+## Fase 4: Del texto a la predicción
+
+La Fase 4 conecta el entrenamiento neuronal con el lenguaje:
+
+```text
+Texto → tokens → IDs → embeddings → contexto → logits
+                                                |
+                       Entrenar: pérdida → gradientes → actualizar parámetros
+                                                |
+                       Predecir: softmax → argmax → siguiente token
+```
+
+## Corpus
+
+Un corpus es el conjunto de textos con el que trabajamos. En esta fase usamos frases pequeñas como `el perro come` y `el gato duerme`. El modelo aprende patrones de ese corpus; aprender estos ejemplos no demuestra que pueda generalizar a cualquier texto.
+
+---
+
+## Token y tokenización
+
+Un token es una unidad en la que dividimos el texto. En nuestros ejercicios:
+
+```python
+texto = "hola mundo hola ia"
+tokens = texto.split()
+# ["hola", "mundo", "hola", "ia"]
+```
+
+`split()` sin argumentos separa por espacios en blanco, incluidos saltos de línea y tabulaciones. No separa por sí solo la puntuación: `hola,` y `hola` serían tokens distintos.
+
+En otros tokenizadores, un token puede ser una palabra, una subpalabra, un símbolo o parte de un número. Aquí cada fragmento separado por espacios en blanco se trata como un token.
+
+---
+
+## Vocabulario e ID de token
+
+El vocabulario contiene los tokens únicos. En los ejercicios 01 y 02 se construye con `sorted(set(tokens))`, para asignar IDs en un orden estable:
+
+| Token | ID |
+| --- | ---: |
+| hola | 0 |
+| ia | 1 |
+| mundo | 2 |
+
+El ID identifica un token; que dos IDs sean cercanos no significa que sus palabras sean parecidas. El orden del vocabulario debe coincidir con el de la tabla de embeddings y el de las clases de salida.
+
+---
+
+## Encode y decode
+
+**Encode** convierte tokens a IDs mediante `token_a_id`. **Decode** hace el recorrido inverso mediante `id_a_token`:
+
+```text
+"hola mundo hola ia" → [0, 2, 0, 1] → "hola mundo hola ia"
+```
+
+El ejercicio 02 implementa estas operaciones con diccionarios y listas, sin definir funciones llamadas `encode()` o `decode()`. Al unir con `" ".join(...)`, los espacios repetidos y saltos de línea originales no se recuperan.
+
+---
+
+## Embedding y dimensión del embedding
+
+Un embedding es un vector de números asociado a un token. `nn.Embedding` contiene una tabla de parámetros aprendibles y consulta la fila correspondiente a cada ID:
+
+```python
+embedding = nn.Embedding(num_embeddings=3, embedding_dim=4)
+```
+
+Esta tabla tiene 3 filas y 4 números por fila. `embedding_dim` determina la longitud del vector. En 03 y 04 se usan 4 dimensiones; en los modelos 06 y 07, 8.
+
+Los embeddings empiezan con valores aleatorios. Solo cambian mediante entrenamiento si participan en la pérdida y el optimizador actualiza sus parámetros. Consultar la tabla por sí solo no la entrena.
+
+---
+
+## Similitud coseno
+
+La similitud coseno compara la dirección de dos vectores no nulos:
+
+```text
+coseno(a, b) = producto_punto(a, b) / (norma(a) * norma(b))
+```
+
+| Valor | Interpretación geométrica |
+| ---: | --- |
+| Cercano a 1 | Direcciones similares. |
+| Cercano a 0 | Direcciones aproximadamente perpendiculares. |
+| Cercano a -1 | Direcciones opuestas. |
+
+En el ejercicio 04 se usa `F.cosine_similarity`. Como los embeddings son aleatorios y no se entrenan, esos valores no demuestran relación semántica entre las palabras. Incluso después de entrenar, su utilidad depende de la tarea y los datos.
+
+---
+
+## Contexto, target y predicción del siguiente token
+
+El contexto es la entrada utilizada para predecir una continuación; el target es el token correcto del ejemplo:
+
+```text
+Contexto: perro       → target: come
+Contexto: [el, perro] → target: come
+```
+
+La tarea se llama predicción del siguiente token. El target se extrae del propio texto desplazándose una posición más allá del contexto.
+
+Con `N` tokens y una ventana de tamaño `C`, estos ejercicios producen `N - C` ejemplos. Con 12 tokens se obtienen 11 ejemplos de un token y 10 ejemplos de dos tokens.
+
+---
+
+## Ventana de contexto
+
+La ventana de contexto es la cantidad de tokens previos que el modelo usa para una predicción. En el ejercicio 06 es 1 y en el 07 es 2.
+
+Una ventana mayor permite observar más información, pero no garantiza una única respuesta. `[el, perro]` puede continuar con `come` o `duerme` en nuestro corpus.
+
+---
+
+## Concatenación de embeddings y flatten
+
+En el ejercicio 07, cada ejemplo contiene dos embeddings de ocho números:
+
+```text
+IDs:                  [batch, 2]
+Embeddings:           [batch, 2, 8]
+flatten(start_dim=1):  [batch, 16]
+Linear(16, 5):        [batch, 5]
+```
+
+`flatten(start_dim=1)` conserva la dimensión del lote y une las dimensiones del contexto y del embedding. No suma ni promedia los vectores.
+
+La concatenación conserva el orden: la primera y la segunda posición ocupan lugares distintos. La capa lineal puede aprender pesos distintos para cada posición, pero todavía no calcula atención según el contenido.
+
+---
+
+## Logits
+
+Los logits son las puntuaciones que produce la capa final, una por cada token del vocabulario. Pueden ser positivos o negativos y no necesitan sumar 1.
+
+Con cinco tokens de vocabulario, cada ejemplo produce cinco logits. La posición de cada logit corresponde al ID del token que podría venir después.
+
+---
+
+## Softmax y argmax
+
+Softmax convierte logits en una distribución de probabilidades:
+
+```text
+p(i) = exp(logit_i) / suma_j(exp(logit_j))
+```
+
+Las probabilidades suman 1, salvo pequeñas diferencias numéricas. En estos modelos, `torch.softmax(logits, dim=1)` opera sobre los cinco tokens posibles de cada ejemplo.
+
+`argmax` devuelve el índice del valor mayor. Selecciona una sola continuación y no muestra la incertidumbre restante ni realiza muestreo. Puede aplicarse directamente a los logits para obtener el mismo máximo; el softmax del ejercicio permite interpretar las puntuaciones como probabilidades.
+
+---
+
+## CrossEntropyLoss
+
+`nn.CrossEntropyLoss()` mide el error de una clasificación entre varias clases; en esta fase cada clase es un token del vocabulario.
+
+```python
+criterio = nn.CrossEntropyLoss()
+loss = criterio(logits, y)
+```
+
+Para el caso de estos ejercicios, recibe logits de forma `[batch, vocab_size]` y targets enteros de forma `[batch]`, con tipo `torch.long`. No se aplica softmax antes de pasar los logits a esta función: ya incorpora el cálculo equivalente a log-softmax y la pérdida correspondiente.
+
+Para un ejemplo, la pérdida equivale a `-log(probabilidad_del_target)`. Cuanta menos probabilidad se asigna al target, mayor es la penalización.
+
+---
+
+## Adam y aprendizaje de embeddings
+
+Adam es el optimizador usado en los modelos de la Fase 4:
+
+```python
+optimizer = torch.optim.Adam(modelo.parameters(), lr=0.05)
+```
+
+Ajusta los parámetros usando los gradientes y estadísticas acumuladas de esos gradientes. La tasa de aprendizaje indicada pertenece al experimento; no es una recomendación universal.
+
+El ciclo es `forward → pérdida → zero_grad → backward → step`. `backward()` calcula gradientes y `step()` actualiza los parámetros. Como el embedding forma parte del modelo, también recibe actualizaciones.
+
+---
+
+## Ambigüedad y distribución de continuaciones
+
+El corpus contiene:
+
+```text
+[el, perro] → come
+[el, perro] → duerme
+```
+
+El modelo recibe la misma entrada en ambos casos. No puede asignar simultáneamente probabilidad 1 a dos tokens diferentes. Aprender a repartir la probabilidad entre continuaciones es parte de la tarea.
+
+En este ejemplo equilibrado, asignar aproximadamente la mitad a cada continuación es coherente con los datos. La pérdida conserva una contribución positiva; no siempre debe llegar a cero. `argmax` elige una palabra aunque haya otra casi igual de probable.
+
+---
+
+## Límites de frase y tokens especiales
+
+En esta fase, `split()` elimina los saltos de línea como separadores de texto y no crea tokens de fin de frase. El modelo ve una secuencia continua, por lo que aprende transiciones como `come → el` al pasar de una línea a la siguiente.
+
+Un token de fin de secuencia o uno para palabras desconocidas podría añadirse en una ampliación. Actualmente no existen; consultar un token fuera del vocabulario produce `KeyError`.
+
+---
+
+## Aleatoriedad y reproducibilidad
+
+Los pesos iniciales aleatorios pueden producir diferencias entre ejecuciones. Para un experimento más reproducible se puede fijar una semilla antes de construir el modelo:
+
+```python
+torch.manual_seed(42)
+```
+
+Los scripts actuales de Fase 4 no incluyen esa línea. La semilla ayuda a repetir experimentos bajo las mismas condiciones, pero no garantiza igualdad absoluta entre distintos dispositivos, versiones o algoritmos.
+
+---
+
+## Puente hacia attention
+
+El modelo de dos tokens concatena embeddings y aplica una capa lineal. Self-attention permitirá calcular cuánto contribuye cada token al combinar información del contexto, usando pesos que dependen de su contenido.
+
+La [Fase 5](01_Plan_de_Trabajo.md#fase-5-self-attention) introducirá Query, Key, Value, puntuaciones de atención, softmax, máscara causal y múltiples cabezas. Estos componentes todavía no están implementados en los ejercicios de Fase 4.

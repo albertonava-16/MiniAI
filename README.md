@@ -16,13 +16,14 @@ El proyecto avanza desde la matemática fundamental hasta una arquitectura capaz
 
 ## Estado actual
 
-Avance registrado al 19 de septiembre de 2026, según la memoria técnica:
+Avance registrado al 26 de septiembre de 2026, según la memoria técnica y la confirmación de ejecución del autor:
 
 - **Fase 0 - Laboratorio:** completada según las pruebas previas del entorno.
 - **Fase 1 - Neurona artificial:** implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión.
 - **Fase 2 - Red neuronal:** trabajada con una red XOR en NumPy y un ejercicio de backpropagation.
 - **Fase 3 - PyTorch y GPU:** completada con tensores en CPU/GPU, XOR en PyTorch, `autograd`, gradientes reales, `optimizer.step()` y benchmarks CPU vs GPU.
-- **Siguiente paso:** pasar a la Fase 4 para tokenización y embeddings.
+- **Fase 4 - Tokenización, embeddings y predicción:** completada con siete ejercicios, desde texto e IDs hasta modelos de siguiente token con contextos de uno y dos tokens.
+- **Siguiente paso:** comenzar la Fase 5, self-attention: Query, Key, Value y pesos de atención.
 
 ## Documentación
 
@@ -78,14 +79,22 @@ MiniAI/
 |   |-- fase2/
 |   |   |-- 01_red_xor.py
 |   |   `-- 02_backprop_xor.py
-|   `-- fase3/
-|       |-- 01_tensores_gpu.py
-|       |-- 02_xor_pytorch.py
-|       |-- 03_autograd_basico.py
-|       |-- 04_gradientes_red.py
-|       |-- 05_peso_antes_despues.py
-|       |-- 06_cpu_vs_gpu.py
-|       `-- 07_matrices_cpu_vs_gpu.py
+|   |-- fase3/
+|   |   |-- 01_tensores_gpu.py
+|   |   |-- 02_xor_pytorch.py
+|   |   |-- 03_autograd_basico.py
+|   |   |-- 04_gradientes_red.py
+|   |   |-- 05_peso_antes_despues.py
+|   |   |-- 06_cpu_vs_gpu.py
+|   |   `-- 07_matrices_cpu_vs_gpu.py
+|   `-- fase4/
+|       |-- 01_tokenizacion_basica.py
+|       |-- 02_encode_decode.py
+|       |-- 03_embeddings.py
+|       |-- 04_similitud_embeddings.py
+|       |-- 05_contexto_siguiente_token.py
+|       |-- 06_modelo_lenguaje_basico.py
+|       `-- 07_contexto_dos_tokens.py
 |-- .venv/                    # Entorno virtual local, no versionar
 |-- .gitignore
 `-- README.md
@@ -164,6 +173,28 @@ python src/fase3/07_matrices_cpu_vs_gpu.py
 
 Esta fase reimplementa XOR con PyTorch, usa `nn.Module`, `nn.Linear`, `MSELoss`, `loss.backward()` y `optimizer.step()`. También compara CPU y GPU; en matrices de `3000x3000`, la RTX 5050 fue aproximadamente **11-14x** más rápida que la CPU.
 
+## Ejecutar la fase 4
+
+Desde la raíz del repositorio, con el entorno virtual activo:
+
+```bash
+python src/fase4/01_tokenizacion_basica.py
+python src/fase4/02_encode_decode.py
+python src/fase4/03_embeddings.py
+python src/fase4/04_similitud_embeddings.py
+python src/fase4/05_contexto_siguiente_token.py
+python src/fase4/06_modelo_lenguaje_basico.py
+python src/fase4/07_contexto_dos_tokens.py
+```
+
+Los ejercicios 01, 02 y 05 usan Python sin PyTorch. Los ejercicios 03 y 04 muestran embeddings aleatorios de cuatro dimensiones en CPU; 06 y 07 entrenan embeddings de ocho dimensiones y una capa lineal, seleccionando CUDA si está disponible o CPU en caso contrario.
+
+El recorrido aprendido es `texto → tokens → IDs → embeddings → logits → probabilidades → siguiente token`. Durante el entrenamiento se pasan los logits directamente a `CrossEntropyLoss` y se actualizan tanto los embeddings como la capa de salida con Adam.
+
+Un contexto como `el perro` admite `come` y `duerme` en el corpus: la red aprende una distribución sobre las continuaciones. La pérdida no tiene por qué llegar a cero. Estos modelos aún usan contexto fijo y no incorporan atención.
+
+El detalle de los ejercicios, sus límites y el bloqueo de `shm.dll` resuelto durante la fase están en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token).
+
 ## Roadmap
 
 | Fase | Tema | Estado |
@@ -172,7 +203,7 @@ Esta fase reimplementa XOR con PyTorch, usa `nn.Module`, `nn.Linear`, `MSELoss`,
 | 1 | Neurona artificial desde cero | Ejercicios implementados |
 | 2 | Red neuronal desde cero | Trabajada |
 | 3 | PyTorch y entrenamiento con GPU | Completada |
-| 4 | Tokenización y embeddings | Pendiente |
+| 4 | Tokenización, embeddings y predicción de siguiente token | Completada |
 | 5 | Self-attention | Pendiente |
 | 6 | Construir un Transformer pequeño | Pendiente |
 | 7 | Entrenar MiniAI | Pendiente |

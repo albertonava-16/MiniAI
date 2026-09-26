@@ -5,9 +5,9 @@ Este documento organiza el recorrido de MiniAI: desde una neurona artificial has
 La intención es avanzar por fases, entender cada componente y registrar resultados antes de pasar al siguiente nivel.
 
 **Duración estimada total:** 44–60 horas, según la suma de las fases.  
-**Último avance registrado:** 19 de septiembre de 2026.
+**Último avance registrado:** 26 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 4, tokenización y embeddings.
+**Punto para retomar:** Fase 5, self-attention.
 
 Documentos relacionados: [memoria técnica](02_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -63,7 +63,7 @@ Cada fase incluye un objetivo, tareas, conceptos clave, un criterio de salida y 
 
 ## Estado actual y siguiente sesión
 
-El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **19 de septiembre de 2026**.
+El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **26 de septiembre de 2026**.
 
 | Fase | Avance registrado |
 | --- | --- |
@@ -71,20 +71,21 @@ El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-
 | 1. Neurona artificial | Implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión. |
 | 2. Red neuronal | Trabajada: red XOR con NumPy y ejercicio de backpropagation. |
 | 3. PyTorch y GPU | Completada: tensores, CUDA, XOR en PyTorch, gradientes reales, optimizador y benchmark CPU vs GPU. |
-| 4–11 | Pendientes en el registro de avance. |
+| 4. Tokenización y embeddings | Completada: siete ejercicios ejecutados por el autor, incluyendo predicción con uno y dos tokens de contexto. |
+| 5–11 | Pendientes en el registro de avance. |
 
-Los estados describen el avance documentado. La Fase 3 registra los ejercicios implementados en `src/fase3` y el resultado observado del benchmark de matrices.
+Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución.
 
 ### Primera tarea al retomar
 
-Comenzar la [Fase 4](#fase-4-tokenización-y-embeddings), creando un corpus pequeño, un vocabulario y un tokenizador sencillo.
+Comenzar la [Fase 5](#fase-5-self-attention), partiendo de los embeddings y del contexto de dos tokens construidos en la Fase 4.
 
 Después:
 
-- [ ] Definir el corpus mínimo de prueba.
-- [ ] Convertir texto a IDs y de IDs a texto.
-- [ ] Crear embeddings pequeños.
-- [ ] Preparar pares `input/target` para predicción del siguiente token.
+- [ ] Repasar las formas de los tensores de contexto y embeddings.
+- [ ] Construir Query, Key y Value a partir de los embeddings.
+- [ ] Calcular `QK^T`, escalar por la raíz de la dimensión de las keys y aplicar softmax.
+- [ ] Combinar los values e inspeccionar los pesos de atención.
 
 Los comandos para comenzar están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido).
 
@@ -100,7 +101,7 @@ Los tiempos son estimaciones de dedicación por fase, no horas medidas ni fechas
 | 1 | Neurona artificial | 3–4 h | Ejercicios implementados |
 | 2 | Red neuronal | 4–5 h | Trabajada |
 | 3 | PyTorch y GPU | 3–4 h | Completada |
-| 4 | Tokenización y embeddings | 4–5 h | Pendiente |
+| 4 | Tokenización, embeddings y predicción de siguiente token | 4–5 h | Completada |
 | 5 | Self-attention | 5–6 h | Pendiente |
 | 6 | Transformer | 6–8 h | Pendiente |
 | 7 | Entrenamiento de MiniAI | 4–6 h | Pendiente |
@@ -385,53 +386,59 @@ Entender qué automatiza PyTorch y qué ocurre detrás de `loss.backward()` y `o
 
 ## Fase 4: Tokenización y embeddings
 
-**Estado:** pendiente.  
-**Tiempo estimado:** 4–5 horas.
+**Estado:** completada el 26 de septiembre de 2026, según la confirmación del autor.
+
+**Tiempo estimado:** 4–5 horas; no se midió la duración real.
 
 ### Objetivo
 
-Pasar de números genéricos a lenguaje.
+Pasar de entradas numéricas simples a procesar texto y entrenar un modelo básico que prediga el siguiente token.
 
 ### Tareas
 
-- Crear un corpus pequeño de texto.
-- Construir un vocabulario.
-- Crear un tokenizador sencillo.
-- Convertir texto a identificadores (`IDs`).
-- Convertir IDs a texto.
-- Introducir un token especial si es necesario.
-- Crear embeddings y representar tokens como vectores.
-- Preparar secuencias de contexto.
-- Crear pares de entrada y objetivo (`input/target`).
+- [x] Crear un corpus pequeño de texto y un vocabulario.
+- [x] Tokenizar por espacios en blanco con `split()`.
+- [x] Convertir texto a identificadores (`IDs`) y reconstruir texto desde IDs.
+- [x] Crear embeddings y comparar vectores mediante similitud coseno.
+- [x] Preparar pares de entrada y objetivo (`input/target`).
+- [x] Entrenar un modelo `Embedding → Linear` con `CrossEntropyLoss` y Adam.
+- [x] Convertir logits en probabilidades y seleccionar un token con `argmax`.
+- [x] Ampliar el contexto de uno a dos tokens y concatenar sus embeddings.
+- [x] Comprender que un contexto puede tener varias continuaciones válidas.
 
-### Ejemplo
+No se introdujeron tokens especiales: el corpus se procesa como una secuencia continua. Incorporar límites de frase o un token desconocido queda como ampliación futura, no como requisito pendiente del cierre de esta fase.
 
-```text
-Texto: "hola mundo"
+### Ejercicios implementados y ejecutados
 
-hola  → 17
-mundo → 42
+| Archivo | Propósito |
+| --- | --- |
+| [01_tokenizacion_basica.py](../../src/fase4/01_tokenizacion_basica.py) | Separar texto en tokens, construir el vocabulario ordenado y asignar IDs. |
+| [02_encode_decode.py](../../src/fase4/02_encode_decode.py) | Recorrer texto → IDs → texto mediante dos diccionarios. |
+| [03_embeddings.py](../../src/fase4/03_embeddings.py) | Consultar vectores de cuatro dimensiones con `nn.Embedding`. |
+| [04_similitud_embeddings.py](../../src/fase4/04_similitud_embeddings.py) | Comparar embeddings aleatorios con similitud coseno. |
+| [05_contexto_siguiente_token.py](../../src/fase4/05_contexto_siguiente_token.py) | Construir los 11 pares consecutivos de un corpus de 12 tokens. |
+| [06_modelo_lenguaje_basico.py](../../src/fase4/06_modelo_lenguaje_basico.py) | Entrenar y consultar un modelo con contexto de un token. |
+| [07_contexto_dos_tokens.py](../../src/fase4/07_contexto_dos_tokens.py) | Entrenar con 10 ventanas de dos tokens y probar `el perro` y `el gato`. |
 
-17
- ↓
-Embedding
- ↓
-[0.28, -0.91, 0.37, ...]
-```
+### Registro del hito completado
 
-Los IDs y los valores del vector son ilustrativos.
+Los modelos 06 y 07 usan embeddings de dimensión 8, Adam con `lr=0.05` y 3000 épocas sobre todos los ejemplos juntos. Los embeddings y la capa lineal se ajustan mediante backpropagation. Se imprime la pérdida final y se muestran predicciones, sin guardar checkpoints ni separar validación.
+
+El contexto `el perro` aparece con los objetivos `come` y `duerme`. Ampliar la ventana aporta información, pero no elimina esta ambigüedad: el modelo debe distribuir probabilidad entre las continuaciones. Las predicciones pueden variar entre ejecuciones porque los scripts no fijan una semilla.
+
+La ejecución quedó desbloqueada después de diagnosticar Smart App Control de Windows. El incidente y los límites del modelo están descritos en la [memoria técnica](02_Memoria_Tecnica.md#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token).
 
 ### Conceptos clave
 
-Token, vocabulario (`vocabulary`), token ID, embedding, ventana de contexto (`context window`), secuencia y predicción del siguiente token (`next-token prediction`).
+Token, vocabulario, encode/decode, embedding, similitud coseno, ventana de contexto, target, logits, softmax, `argmax`, `CrossEntropyLoss`, Adam y ambigüedad de las continuaciones.
 
 ### Criterio de salida
 
-Podemos convertir texto a tokens, embeddings y objetivos de entrenamiento.
+Podemos convertir texto a tokens, embeddings y objetivos de entrenamiento, entrenar los modelos con uno y dos tokens de contexto y explicar por qué una entrada puede admitir varias respuestas.
 
-### Resultado esperado
+### Resultado alcanzado y siguiente fase
 
-Primer flujo de procesamiento de lenguaje.
+Primer flujo de procesamiento y predicción de lenguaje completado. La Fase 5 incorporará atención para calcular pesos sobre el contexto según su contenido; el modelo actual concatena embeddings y usa una capa lineal.
 
 ---
 

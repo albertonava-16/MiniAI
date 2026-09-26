@@ -4,11 +4,11 @@ Este documento reúne la configuración del entorno, los comandos de trabajo y l
 
 La intención es tener una referencia rápida para retomar el proyecto después de reiniciar la computadora o al comenzar una nueva fase.
 
-**Último avance registrado:** 19 de septiembre de 2026.
+**Último avance registrado:** 26 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 4, tokenización y embeddings.
+**Punto para retomar:** Fase 5, self-attention.
 
-Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Esta reorganización no incluye nuevas ejecuciones de los ejercicios ni una comprobación del entorno o de CUDA.
+Las versiones y los resultados de GPU se conservan como registro del entorno anterior. La actualización de Fase 4 recoge la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevas pérdidas, tiempos ni resultados de CUDA.
 
 Documentos relacionados: [plan de trabajo](01_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -26,7 +26,8 @@ Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas act
 - [Entorno virtual](#entorno-virtual)
 - [GPU y Lenovo Legion](#gpu-y-lenovo-legion)
 - [PyTorch y CUDA](#pytorch-y-cuda)
-- [Fase 3: PyTorch y entrenamiento con GPU](#fase-3-pytorch-y-entrenamiento-con-gpu)
+- [Avance de la Fase 3](#avance-de-la-fase-3)
+- [Fase 4: Tokenización, embeddings y predicción de siguiente token](#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token)
 - [Primera prueba de GPU](#primera-prueba-de-gpu)
 - [Rutina para retomar el proyecto](#rutina-para-retomar-el-proyecto)
 - [Comandos de diagnóstico](#comandos-de-diagnóstico)
@@ -46,6 +47,14 @@ code .
 ```
 
 Confirmar que aparezca `(.venv)` al inicio de la terminal.
+
+La Fase 4 está completada y el siguiente trabajo es self-attention. Para repasar el último modelo antes de comenzar la Fase 5:
+
+```bash
+python src/fase4/07_contexto_dos_tokens.py
+```
+
+Este script vuelve a entrenar desde cero en cada ejecución. Usa CUDA si está disponible y, en caso contrario, CPU. La lista de los siete ejercicios está en [Fase 4](#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token).
 
 Para repasar el ejercicio de backpropagation de la Fase 2:
 
@@ -85,7 +94,7 @@ python src/fase3/07_matrices_cpu_vs_gpu.py
 
 ## Avance y punto para retomar
 
-La fecha de corte del avance es el **19 de septiembre de 2026**.
+La fecha de corte del avance es el **26 de septiembre de 2026**.
 
 | Fase | Estado registrado | Alcance |
 | --- | --- | --- |
@@ -93,6 +102,8 @@ La fecha de corte del avance es el **19 de septiembre de 2026**.
 | 1. Neurona artificial | Ejercicios implementados | Neurona básica, entrenamiento de AND y frontera de decisión. |
 | 2. Red neuronal | Trabajada | Red XOR con NumPy y ejercicio de backpropagation. |
 | 3. PyTorch y GPU | Completada | Tensores en CPU/GPU, CUDA, XOR en PyTorch, autograd, gradientes, optimizador y benchmark. |
+| 4. Tokenización y embeddings | Completada | Texto e IDs, embeddings, similitud coseno y modelos de siguiente token con contextos de uno y dos tokens. |
+| 5. Self-attention | Pendiente; siguiente fase | Query, Key, Value, puntuaciones y pesos de atención. |
 
 ### Avance de la Fase 1
 
@@ -203,15 +214,157 @@ La diferencia se nota en matrices grandes porque la GPU puede ejecutar muchas mu
 
 ### Punto para retomar
 
-La siguiente fase es la [Fase 4 del plan](01_Plan_de_Trabajo.md#fase-4-tokenización-y-embeddings): tokenización y embeddings.
+La siguiente fase es la [Fase 5 del plan](01_Plan_de_Trabajo.md#fase-5-self-attention): self-attention.
 
-Primera tarea recomendada:
+Partir de los embeddings del contexto y construir Query, Key y Value. Después, calcular puntuaciones con `QK^T`, escalarlas, aplicar softmax y usar los pesos obtenidos para combinar los values. Más adelante se incorporarán máscara causal y múltiples cabezas.
 
-- Crear un corpus pequeño.
-- Construir un vocabulario.
-- Convertir texto a IDs.
-- Convertir IDs de vuelta a texto.
-- Crear embeddings para representar tokens como vectores.
+El modelo actual conserva el orden al concatenar embeddings y puede aprender pesos distintos para cada posición. Todavía no calcula pesos de atención que dependan del contenido del contexto.
+
+---
+
+## Fase 4: Tokenización, embeddings y predicción de siguiente token
+
+**Cierre registrado:** 26 de septiembre de 2026. El autor confirmó que resolvió el bloqueo de ejecución y terminó la fase. Los detalles de implementación siguientes se contrastaron con los siete scripts de `src/fase4`.
+
+### Objetivo y recorrido
+
+Pasar de entradas numéricas simples a texto y construir un modelo pequeño que aprenda a predecir el siguiente token.
+
+```text
+Texto → tokens → vocabulario → IDs → embeddings → capa lineal → logits
+                                                                  |
+                         Entrenamiento: CrossEntropyLoss ← target |
+                                    ↓                             |
+                              backpropagation                     |
+                                    ↓                             |
+                         actualizar embeddings y pesos            |
+                                                                  ↓
+                            Inferencia: softmax → argmax → token
+```
+
+### Ejercicios y alcance
+
+| Archivo | Implementación y aprendizaje |
+| --- | --- |
+| [01_tokenizacion_basica.py](../../src/fase4/01_tokenizacion_basica.py) | `split()`, `sorted(set(tokens))` y diccionario token → ID para `hola mundo hola ia`. |
+| [02_encode_decode.py](../../src/fase4/02_encode_decode.py) | Diccionarios token → ID e ID → token; reconstrucción con `" ".join(...)`. |
+| [03_embeddings.py](../../src/fase4/03_embeddings.py) | Tabla `nn.Embedding(3, 4)`; consulta de los IDs de `hola`, `mundo` e `ia`. No entrena. |
+| [04_similitud_embeddings.py](../../src/fase4/04_similitud_embeddings.py) | `F.cosine_similarity` entre vectores aleatorios de dimensión 4. No entrena ni demuestra similitud semántica. |
+| [05_contexto_siguiente_token.py](../../src/fase4/05_contexto_siguiente_token.py) | Construcción e impresión de 11 pares de tokens consecutivos. |
+| [06_modelo_lenguaje_basico.py](../../src/fase4/06_modelo_lenguaje_basico.py) | `MiniModeloLenguaje`: embedding y capa lineal; entrenamiento con contexto de un token y predicciones para todo el vocabulario. |
+| [07_contexto_dos_tokens.py](../../src/fase4/07_contexto_dos_tokens.py) | `MiniModeloContexto`: embeddings, `flatten(start_dim=1)` y capa lineal; ventanas de dos tokens y función `predecir(token1, token2)`. |
+
+El vocabulario de 01 y 02 es `['hola', 'ia', 'mundo']`; el texto se codifica como `[0, 2, 0, 1]`. El ID es una etiqueta, no una medida de significado. La decodificación recupera el texto de ejemplo, pero no preserva espacios repetidos ni saltos de línea del texto original.
+
+### Corpus y objetivos de entrenamiento
+
+Los ejercicios 05 y 06 usan:
+
+```text
+el perro come
+el gato come
+el perro duerme
+el gato duerme
+```
+
+El ejercicio 07 usa las mismas cuatro frases en otro orden:
+
+```text
+el perro come
+el gato duerme
+el perro duerme
+el gato come
+```
+
+En ambos casos hay 12 tokens y 5 elementos de vocabulario:
+
+```text
+come → 0
+duerme → 1
+el → 2
+gato → 3
+perro → 4
+```
+
+`split()` trata los saltos de línea como espacios en blanco. No se agregan marcadores de inicio o fin de frase. Por eso aparecen transiciones entre líneas como `come → el` y `duerme → el`. En el ejercicio 07 también aparecen ventanas como `[perro, come] → el`; el cambio de orden de las frases cambia algunas ventanas que cruzan sus límites.
+
+Con un token de contexto se obtienen `12 - 1 = 11` ejemplos; con dos tokens, `12 - 2 = 10`. El target siempre es el ID del token inmediatamente posterior al contexto.
+
+### Configuración de los modelos
+
+| Elemento | Ejercicio 06 | Ejercicio 07 |
+| --- | --- | --- |
+| Contexto | 1 token | 2 tokens |
+| Vocabulario | 5 tokens | 5 tokens |
+| Embedding | `nn.Embedding(5, 8)` | `nn.Embedding(5, 8)` |
+| Capa de salida | `nn.Linear(8, 5)` | `nn.Linear(16, 5)` |
+| Entrada `X` | `[11]`, IDs enteros | `[10, 2]`, IDs enteros |
+| Embeddings del lote | `[11, 8]` | `[10, 2, 8]` |
+| Entrada a la capa lineal | `[11, 8]` | `[10, 16]` tras aplanar |
+| Logits | `[11, 5]` | `[10, 5]` |
+| Objetivos `y` | `[11]`, tipo `torch.long` | `[10]`, tipo `torch.long` |
+| Pérdida | `nn.CrossEntropyLoss()` | `nn.CrossEntropyLoss()` |
+| Optimizador | Adam, `lr=0.05` | Adam, `lr=0.05` |
+| Épocas | 3000 | 3000 |
+| Lote | Todos los ejemplos juntos | Todos los ejemplos juntos |
+| Dispositivo | CUDA si está disponible; CPU en caso contrario | CUDA si está disponible; CPU en caso contrario |
+
+Los ejercicios 03 y 04 se ejecutan en CPU tal como están escritos. En 06 y 07, el modelo y los tensores se trasladan al mismo `device`.
+
+### Entrenamiento e inferencia
+
+El ciclo utilizado es:
+
+```python
+logits = modelo(X)
+loss = criterio(logits, y)
+optimizer.zero_grad()
+loss.backward()
+optimizer.step()
+```
+
+`CrossEntropyLoss` recibe los logits sin aplicar softmax previamente y los IDs de los targets. Cada token del vocabulario es una clase. `modelo.parameters()` incluye tanto la tabla de embeddings como los pesos y el bias de la capa lineal; todos participan en el aprendizaje.
+
+Para consultar el modelo se usa `torch.no_grad()`, se convierten logits en probabilidades con `torch.softmax(logits, dim=1)` y se selecciona el ID de mayor probabilidad con `torch.argmax(..., dim=1)`. Los programas imprimen el token seleccionado, no la distribución completa. La selección con argmax no realiza muestreo.
+
+### Resultados y ambigüedad
+
+El autor reportó predicciones como `gato → come`, `perro → come`, `come → el` y `duerme → el`. Son ejemplos observados, no salidas fijas para cada ejecución. No se compartieron valores numéricos de pérdida final ni mediciones de tiempo.
+
+El corpus incluye tanto `el perro come` como `el perro duerme`. El mismo contexto `[el, perro]` tiene dos targets distintos; ocurre lo mismo con `[el, gato]`. Un modelo que ve entradas idénticas no puede asignar probabilidad 100 % a ambos objetivos a la vez. Para esas continuaciones igualmente frecuentes, una distribución equilibrada es coherente con los datos y la pérdida conserva una contribución positiva.
+
+Por eso, una pérdida que deja de bajar no implica por sí sola que el entrenamiento esté roto. La tarea contiene ambigüedad. Pequeñas diferencias de probabilidad pueden cambiar la palabra elegida con `argmax`, aunque la distribución sea parecida.
+
+Los scripts imprimen la pérdida calculada en el último forward de entrenamiento, antes del último `optimizer.step()`; las consultas posteriores sí usan los parámetros ya actualizados.
+
+### Aleatoriedad y límites actuales
+
+- Los scripts no fijan `torch.manual_seed`; pesos, embeddings iniciales y algunas predicciones pueden variar.
+- Como experimento de reproducibilidad se puede añadir `torch.manual_seed(42)` antes de crear el modelo. No está incorporado al código actual y no garantiza resultados idénticos entre todo hardware y toda configuración.
+- El corpus es pequeño y cerrado. No existe tratamiento de tokens desconocidos: consultar una palabra fuera del vocabulario produce un `KeyError`.
+- No hay tokens especiales ni separación explícita de frases.
+- No hay conjunto de validación, métricas de generalización, checkpoints ni generación de secuencias completas.
+- Los embeddings iniciales de 03 y 04 no tienen semántica aprendida. Los entrenados se ajustan a esta tarea diminuta; no demuestran comprensión general del lenguaje.
+- La ventana es fija. La concatenación conserva posiciones y la capa lineal aprende pesos por posición, pero no hay un mecanismo de atención que calcule relevancia según el contenido.
+- Aumentar el contexto no garantiza una respuesta única ni una mejora de pérdida en cualquier corpus.
+
+### Comandos para repetir la fase
+
+Desde la raíz del repositorio, con `.venv` activo:
+
+```bash
+python src/fase4/01_tokenizacion_basica.py
+python src/fase4/02_encode_decode.py
+python src/fase4/03_embeddings.py
+python src/fase4/04_similitud_embeddings.py
+python src/fase4/05_contexto_siguiente_token.py
+python src/fase4/06_modelo_lenguaje_basico.py
+python src/fase4/07_contexto_dos_tokens.py
+```
+
+Cada script es independiente. Los modelos de 06 y 07 se inicializan y entrenan desde cero; no reutilizan los embeddings de 03 o 04.
+
+El incidente de Windows ocurrido en esta fase se conserva en [WinError 4551 al importar PyTorch](#winerror-4551-al-importar-pytorch).
 
 ---
 
@@ -279,14 +432,22 @@ MiniAI/
 │   ├── fase2/
 │   │   ├── 01_red_xor.py
 │   │   └── 02_backprop_xor.py
-│   └── fase3/
-│       ├── 01_tensores_gpu.py
-│       ├── 02_xor_pytorch.py
-│       ├── 03_autograd_basico.py
-│       ├── 04_gradientes_red.py
-│       ├── 05_peso_antes_despues.py
-│       ├── 06_cpu_vs_gpu.py
-│       └── 07_matrices_cpu_vs_gpu.py
+│   ├── fase3/
+│   │   ├── 01_tensores_gpu.py
+│   │   ├── 02_xor_pytorch.py
+│   │   ├── 03_autograd_basico.py
+│   │   ├── 04_gradientes_red.py
+│   │   ├── 05_peso_antes_despues.py
+│   │   ├── 06_cpu_vs_gpu.py
+│   │   └── 07_matrices_cpu_vs_gpu.py
+│   └── fase4/
+│       ├── 01_tokenizacion_basica.py
+│       ├── 02_encode_decode.py
+│       ├── 03_embeddings.py
+│       ├── 04_similitud_embeddings.py
+│       ├── 05_contexto_siguiente_token.py
+│       ├── 06_modelo_lenguaje_basico.py
+│       └── 07_contexto_dos_tokens.py
 ├── .venv/
 ├── .gitignore
 └── README.md
@@ -521,6 +682,30 @@ Ejecutar desde Git Bash con `.venv` activo:
 ---
 
 ## Errores y soluciones
+
+### WinError 4551 al importar PyTorch
+
+**Fecha:** 26 de septiembre de 2026. **Estado:** resuelto según confirmación del autor.
+
+Al ejecutar `03_embeddings.py` o la comprobación `python -c "import torch; print(torch.__version__)"`, Windows bloqueó `.venv/Lib/site-packages/torch/lib/shm.dll`:
+
+```text
+OSError: [WinError 4551] Una directiva de Control de aplicaciones bloqueó este archivo.
+```
+
+El fallo aparecía en `import torch`, antes de ejecutar la lógica de embeddings. Usar `py` en lugar de `python` produjo el mismo error.
+
+La consulta del registro `Microsoft-Windows-CodeIntegrity/Operational` mostró eventos 3077 para `shm.dll` y eventos 3118 de Smart App Control a las 11:32:06, 11:32:30 y 11:37:30. En la última comprobación previa a la resolución, `VerifiedAndReputablePolicyState` todavía valía `1` (activado).
+
+Se orientó a revisar **Seguridad de Windows → Control de aplicaciones y navegador → Configuración de Control inteligente de aplicaciones**, seleccionar **Desactivado** y confirmar; si ya figuraba desactivado, guardar el trabajo y reiniciar para volver a comprobar. Después, el autor confirmó que funcionó y completó la fase. No quedó registrado si el paso decisivo fue confirmar el cambio, reiniciar o ambos.
+
+El diagnóstico corresponde a una política de confianza/firma de Windows; el mensaje por sí solo no demuestra que la DLL sea malware. Smart App Control es una protección adicional al antivirus y desactivarlo afecta al equipo completo. La posibilidad de reactivarlo depende de las actualizaciones de Windows. Consultar las [preguntas frecuentes de Microsoft](https://support.microsoft.com/en-us/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions) y la [referencia de estados y eventos](https://learn.microsoft.com/en-us/windows/apps/develop/smart-app-control/test-your-app-with-smart-app-control).
+
+Si se repite, comprobar el estado real de esa protección y los eventos recientes antes de atribuirlo al código o reinstalar PyTorch. La prueba mínima de importación es:
+
+```bash
+python -c "import torch; print(torch.__version__)"
+```
 
 ### Un carácter extra en el comando
 
