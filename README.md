@@ -16,7 +16,7 @@ El proyecto avanza desde la matemática fundamental hasta una arquitectura capaz
 
 ## Estado actual
 
-Avance registrado al 26 de septiembre de 2026, según la memoria técnica y la confirmación de ejecución del autor:
+Avance registrado al 27 de septiembre de 2026, según la memoria técnica y la confirmación de ejecución del autor:
 
 - **Fase 0 - Laboratorio:** completada según las pruebas previas del entorno.
 - **Fase 1 - Neurona artificial:** implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión.
@@ -24,7 +24,8 @@ Avance registrado al 26 de septiembre de 2026, según la memoria técnica y la c
 - **Fase 3 - PyTorch y GPU:** completada con tensores en CPU/GPU, XOR en PyTorch, `autograd`, gradientes reales, `optimizer.step()` y benchmarks CPU vs GPU.
 - **Fase 4 - Tokenización, embeddings y predicción:** completada con siete ejercicios, desde texto e IDs hasta modelos de siguiente token con contextos de uno y dos tokens.
 - **Fase 5 - Attention:** completada con siete ejercicios, desde atención para un token hasta Multi-Head Causal Self-Attention con dos cabezas y proyección de salida.
-- **Siguiente paso:** comenzar la Fase 6, integrando atención, conexiones residuales, normalización, red feed-forward e información posicional en un Transformer.
+- **Fase 6 - Transformer:** completada con diez ejercicios: bloques con atención causal, embeddings posicionales, entrenamiento de MiniGPT, generación autoregresiva y recuperación desde un checkpoint.
+- **Siguiente paso:** comenzar la Fase 7 con un corpus más amplio, separación de entrenamiento y validación, y seguimiento de pérdida y generaciones.
 
 ## Documentación
 
@@ -96,14 +97,25 @@ MiniAI/
 |   |   |-- 05_contexto_siguiente_token.py
 |   |   |-- 06_modelo_lenguaje_basico.py
 |   |   `-- 07_contexto_dos_tokens.py
-|   `-- fase5/
-|       |-- 01_attention_intuicion.py
-|       |-- 02_query_key_value.py
-|       |-- 03_self_attention_todos_tokens.py
-|       |-- 04_scaled_dot_product_attention.py
-|       |-- 05_causal_attention.py
-|       |-- 06_attention_aprendible.py
-|       `-- 07_multi_head_attention.py
+|   |-- fase5/
+|   |   |-- 01_attention_intuicion.py
+|   |   |-- 02_query_key_value.py
+|   |   |-- 03_self_attention_todos_tokens.py
+|   |   |-- 04_scaled_dot_product_attention.py
+|   |   |-- 05_causal_attention.py
+|   |   |-- 06_attention_aprendible.py
+|   |   `-- 07_multi_head_attention.py
+|   `-- fase6/
+|       |-- 01_bloque_transformer.py
+|       |-- 02_positional_embeddings.py
+|       |-- 03_transformer_con_posicion.py
+|       |-- 04_transformer_apilado.py
+|       |-- 05_salida_vocabulario.py
+|       |-- 06_entrenar_minigpt.py
+|       |-- 07_generar_texto.py
+|       |-- 08_cargar_modelo.py
+|       |-- 09_checkpoint_completo.py
+|       `-- 10_cargar_checkpoint.py
 |-- .venv/                    # Entorno virtual local, no versionar
 |-- .gitignore
 `-- README.md
@@ -226,6 +238,37 @@ Los módulos de los ejercicios 06 y 07 tienen parámetros entrenables, pero esto
 
 Los archivos, dimensiones y resultados reportados se detallan en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-5-attention).
 
+## Ejecutar la fase 6
+
+Desde la raíz del repositorio, con el entorno virtual activo:
+
+```bash
+python src/fase6/01_bloque_transformer.py
+python src/fase6/02_positional_embeddings.py
+python src/fase6/03_transformer_con_posicion.py
+python src/fase6/04_transformer_apilado.py
+python src/fase6/05_salida_vocabulario.py
+python src/fase6/06_entrenar_minigpt.py
+python src/fase6/07_generar_texto.py
+python src/fase6/08_cargar_modelo.py
+python src/fase6/09_checkpoint_completo.py
+python src/fase6/10_cargar_checkpoint.py
+```
+
+Los ejercicios 01–05 muestran la arquitectura en CPU sin entrenarla. Los scripts 06, 07 y 09 entrenan cada uno un modelo nuevo durante 2000 épocas; 06–10 seleccionan CUDA si está disponible o CPU en caso contrario.
+
+MiniGPT combina embeddings de tokens y posiciones, dos bloques Transformer con dos cabezas y una capa de salida hacia cinco palabras. Usa dimensión de embedding 8, contexto máximo de 20 posiciones, `CrossEntropyLoss` y Adam con `lr=0.01`.
+
+El script 07 guarda `minigpt.pth` y 08 lo carga; 09 guarda `minigpt_checkpoint.pth` con pesos, configuración y vocabulario, y 10 lo recupera. Los archivos se escriben en el directorio desde el que se ejecutan los comandos y se sobrescriben al repetir el guardado. Ejecutar cada cargador después de su script de guardado, desde el mismo directorio. Los cargadores generan sin volver a entrenar.
+
+El resultado reportado por el autor, tanto después de entrenar como al recuperar el modelo, fue:
+
+```text
+el perro come el gato duerme
+```
+
+La generación comienza con `el` y añade cinco tokens mediante `argmax`. El experimento demuestra aprendizaje y persistencia sobre un corpus de seis tokens; todavía no demuestra comprensión del español ni generalización a textos nuevos. Los resultados compartidos, las dimensiones y los límites están en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-6-transformer).
+
 ## Roadmap
 
 | Fase | Tema | Estado |
@@ -236,7 +279,7 @@ Los archivos, dimensiones y resultados reportados se detallan en la [memoria té
 | 3 | PyTorch y entrenamiento con GPU | Completada |
 | 4 | Tokenización, embeddings y predicción de siguiente token | Completada |
 | 5 | Self-attention causal y multi-head attention | Completada |
-| 6 | Construir un Transformer pequeño | Pendiente |
+| 6 | Construir un Transformer pequeño | Completada |
 | 7 | Entrenar MiniAI | Pendiente |
 | 8 | Convertir MiniAI en servicio | Pendiente |
 | 9 | RAG y tools | Pendiente |

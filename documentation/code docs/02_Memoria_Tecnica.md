@@ -4,11 +4,11 @@ Este documento reúne la configuración del entorno, los comandos de trabajo y l
 
 La intención es tener una referencia rápida para retomar el proyecto después de reiniciar la computadora o al comenzar una nueva fase.
 
-**Último avance registrado:** 26 de septiembre de 2026.
+**Último avance registrado:** 27 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 6, construir nuestro Transformer.
+**Punto para retomar:** Fase 7, ampliar el corpus y evaluar el entrenamiento de MiniAI.
 
-Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4 y 5 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevas pérdidas, tiempos ni resultados de CUDA.
+Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4, 5 y 6 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. En Fase 6 se documentan el entrenamiento, la generación y la recuperación desde archivos; las pérdidas y salidas numéricas proceden del contexto compartido por el autor. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevas pérdidas, tiempos ni resultados de CUDA.
 
 Documentos relacionados: [plan de trabajo](01_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -29,6 +29,7 @@ Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas act
 - [Avance de la Fase 3](#avance-de-la-fase-3)
 - [Fase 4: Tokenización, embeddings y predicción de siguiente token](#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token)
 - [Fase 5: Attention](#fase-5-attention)
+- [Fase 6: Transformer](#fase-6-transformer)
 - [Primera prueba de GPU](#primera-prueba-de-gpu)
 - [Rutina para retomar el proyecto](#rutina-para-retomar-el-proyecto)
 - [Comandos de diagnóstico](#comandos-de-diagnóstico)
@@ -49,13 +50,19 @@ code .
 
 Confirmar que aparezca `(.venv)` al inicio de la terminal.
 
-La Fase 5 está completada y el siguiente trabajo es construir un bloque Transformer. Para repasar la atención con múltiples cabezas antes de comenzar la Fase 6:
+La Fase 6 está completada y el siguiente trabajo es ampliar el corpus y evaluar el entrenamiento en Fase 7. Para recuperar MiniGPT sin reentrenarlo, ejecutar desde la raíz donde se guardó `minigpt_checkpoint.pth`:
 
 ```bash
-python src/fase5/07_multi_head_attention.py
+python src/fase6/10_cargar_checkpoint.py
 ```
 
-Este script ejecuta un forward en CPU con parámetros inicializados aleatoriamente, imprime la salida `[3, 4]` y los pesos de cada cabeza. No entrena ni requiere CUDA. La lista de ejercicios está en [Fase 5](#fase-5-attention).
+Si aún no existe ese archivo, crearlo primero con:
+
+```bash
+python src/fase6/09_checkpoint_completo.py
+```
+
+El script 09 entrena un modelo nuevo durante 2000 épocas y guarda el checkpoint; repetirlo sobrescribe ese archivo. El script 10 recupera configuración, vocabulario y pesos, y genera cinco tokens a partir de `el` sin entrenar. Ambos eligen CUDA si está disponible o CPU en caso contrario. Los comandos y dependencias de los diez ejercicios están en [Fase 6](#fase-6-transformer).
 
 Para repasar el ejercicio de backpropagation de la Fase 2:
 
@@ -95,7 +102,7 @@ python src/fase3/07_matrices_cpu_vs_gpu.py
 
 ## Avance y punto para retomar
 
-La fecha de corte del avance es el **26 de septiembre de 2026**.
+La fecha de corte del avance es el **27 de septiembre de 2026**.
 
 | Fase | Estado registrado | Alcance |
 | --- | --- | --- |
@@ -105,7 +112,8 @@ La fecha de corte del avance es el **26 de septiembre de 2026**.
 | 3. PyTorch y GPU | Completada | Tensores en CPU/GPU, CUDA, XOR en PyTorch, autograd, gradientes, optimizador y benchmark. |
 | 4. Tokenización y embeddings | Completada | Texto e IDs, embeddings, similitud coseno y modelos de siguiente token con contextos de uno y dos tokens. |
 | 5. Attention | Completada | Q/K/V, escalado, máscara causal, proyecciones entrenables y multi-head attention. |
-| 6. Transformer | Pendiente; siguiente fase | Atención, conexiones residuales, normalización, red feed-forward e información posicional. |
+| 6. Transformer | Completada | Diez ejercicios: bloque Transformer, posiciones, apilado, entrenamiento, generación y persistencia de MiniGPT. |
+| 7. Entrenar MiniAI | Pendiente; siguiente fase | Corpus más amplio, entrenamiento y validación, lotes, métricas y seguimiento de generaciones. |
 
 ### Avance de la Fase 1
 
@@ -216,11 +224,11 @@ La diferencia se nota en matrices grandes porque la GPU puede ejecutar muchas mu
 
 ### Punto para retomar
 
-La siguiente fase es la [Fase 6 del plan](01_Plan_de_Trabajo.md#fase-6-construir-nuestro-transformer): construir nuestro Transformer.
+La siguiente fase es la [Fase 7 del plan](01_Plan_de_Trabajo.md#fase-7-entrenar-miniai): ampliar el entrenamiento y evaluar MiniAI.
 
-Partir de `MultiHeadAttention` en `src/fase5/07_multi_head_attention.py`. Incorporar conexiones residuales, normalización por capa, una red feed-forward por posición y embeddings posicionales. Después, integrar bloques y una salida sobre el vocabulario para avanzar hacia MiniGPT.
+Partir del MiniGPT y el checkpoint de `src/fase6/09_checkpoint_completo.py` y `src/fase6/10_cargar_checkpoint.py`. Preparar un corpus más amplio, separar entrenamiento y validación, registrar pérdidas y generaciones, y conservar el estado del optimizador para reanudar el entrenamiento.
 
-La atención actual procesa una sola secuencia de forma `[seq_len, embedding_dim]`. Al añadir lotes habrá que adaptar las operaciones y transposiciones; todavía no existe una dimensión de batch en estos módulos.
+El modelo actual procesa una sola secuencia de forma `[seq_len, embedding_dim]` dentro de los bloques. Al añadir lotes habrá que adaptar las operaciones y transposiciones; todavía no existe una dimensión de batch en estos módulos.
 
 ---
 
@@ -482,7 +490,7 @@ La representación es contextualizada porque combina values de las posiciones pe
 - No hay embeddings posicionales, conexiones residuales, LayerNorm ni red feed-forward.
 - No existe una salida sobre el vocabulario ni generación de texto integrada con atención.
 
-La Fase 6 integrará esos componentes para construir un bloque Transformer y avanzar hacia MiniGPT. La Fase 5 queda completada como construcción y comprensión del mecanismo de atención.
+La Fase 6 integró esos componentes para construir un bloque Transformer y avanzar hacia MiniGPT. La Fase 5 queda completada como construcción y comprensión del mecanismo de atención.
 
 ### Comandos para repetir la fase
 
@@ -499,6 +507,204 @@ python src/fase5/07_multi_head_attention.py
 ```
 
 Cada script es independiente. La máscara de 06 y 07 se crea en `x.device`, pero los ejemplos no trasladan el modelo ni los datos a GPU.
+
+---
+
+## Fase 6: Transformer
+
+**Estado:** completada; cierre registrado el 27 de septiembre de 2026 a partir de la confirmación y el contexto del autor.
+
+Se conectó el recorrido completo: `tokens → embeddings + posición → bloques Transformer → logits → entrenamiento → generación → persistencia`. La implementación construye atención y bloques con operaciones y capas de PyTorch; no utiliza un modelo preentrenado ni un bloque Transformer ya ensamblado.
+
+### Ejercicios implementados
+
+| Archivo | Propósito |
+| --- | --- |
+| [01_bloque_transformer.py](../../src/fase6/01_bloque_transformer.py) | Construye atención causal, dos residuales, LayerNorm y feed-forward; conserva la forma `[3, 4]`. |
+| [02_positional_embeddings.py](../../src/fase6/02_positional_embeddings.py) | Suma embeddings manuales de tokens y embeddings posicionales entrenables para posiciones 0, 1 y 2. |
+| [03_transformer_con_posicion.py](../../src/fase6/03_transformer_con_posicion.py) | Integra `nn.Embedding` de tokens y posiciones con un bloque; `MiniTransformer` recibe IDs. |
+| [04_transformer_apilado.py](../../src/fase6/04_transformer_apilado.py) | Apila tres bloques independientes en `nn.ModuleList` y conserva `[3, 4]`. |
+| [05_salida_vocabulario.py](../../src/fase6/05_salida_vocabulario.py) | Añade `Linear(4, 3)` a MiniGPT; muestra logits, softmax y predicciones sin entrenamiento. |
+| [06_entrenar_minigpt.py](../../src/fase6/06_entrenar_minigpt.py) | Entrena MiniGPT con objetivos desplazados y muestra las cinco predicciones; no guarda archivos. |
+| [07_generar_texto.py](../../src/fase6/07_generar_texto.py) | Entrena un modelo nuevo, guarda `minigpt.pth` y genera cinco tokens desde `el`. |
+| [08_cargar_modelo.py](../../src/fase6/08_cargar_modelo.py) | Reconstruye arquitectura y vocabulario definidos en el código, carga `minigpt.pth` y genera sin entrenar. |
+| [09_checkpoint_completo.py](../../src/fase6/09_checkpoint_completo.py) | Entrena un modelo nuevo, guarda pesos, configuración y vocabulario en `minigpt_checkpoint.pth`, y genera. |
+| [10_cargar_checkpoint.py](../../src/fase6/10_cargar_checkpoint.py) | Lee el checkpoint, reconstruye MiniGPT y los diccionarios del vocabulario, carga pesos y genera sin entrenar. |
+
+01–05 ejecutan ejemplos en CPU con parámetros iniciales, sin pérdida ni optimizador. 06–10 seleccionan CUDA si está disponible o CPU en caso contrario. Los scripts repiten las clases de la arquitectura para poder estudiarlas por separado; los cargadores 08 y 10 sí dependen del archivo guardado correspondiente.
+
+### Bloque Transformer y posiciones
+
+El bloque sigue el orden post-normalización: primero suma la transformación a la entrada y después aplica LayerNorm.
+
+```text
+x [T, D]
+  → Multi-Head Causal Self-Attention
+  → LayerNorm(x + attention(x))
+  → FeedForward: Linear(D, 4D) → ReLU → Linear(4D, D)
+  → LayerNorm(x + feed_forward(x))
+  → salida [T, D]
+```
+
+La segunda suma usa la representación resultante de la primera normalización. Attention comunica información entre posiciones permitidas; la red feed-forward aplica la misma transformación a cada posición por separado. Las conexiones residuales conservan un camino para la entrada y los gradientes; LayerNorm normaliza las características de cada token y tiene parámetros aprendibles.
+
+Cada cabeza calcula `softmax(QKᵀ / sqrt(head_dim) + máscara) @ V`. Las posiciones futuras se bloquean con `-inf` antes de softmax. Las salidas de las cabezas se concatenan y se proyectan de nuevo a dimensión `D`.
+
+Los embeddings posicionales son aprendidos, no sinusoidales. Para una secuencia de longitud `T`, se consultan posiciones `0…T-1` y se suman a los embeddings de los tokens. El modelo puede así representar el mismo token de forma distinta según su posición y contexto.
+
+El ejercicio 01 conserva `[3, 4] → [3, 4]`; 03 recibe IDs y produce esa misma forma. En 04 se apilan tres bloques con parámetros independientes mediante `nn.ModuleList`. En 05, `nn.Linear(4, 3)` convierte cada vector en tres logits, uno por palabra del vocabulario de ese ejemplo.
+
+### Arquitectura y dimensiones del modelo entrenado
+
+```text
+Texto → split() → IDs [T]
+  → token embeddings [T, 8] + position embeddings [T, 8]
+  → bloque Transformer 1 [T, 8]
+  → bloque Transformer 2 [T, 8]
+  → Linear(8, 5) → logits [T, 5]
+      ├─ entrenamiento: CrossEntropyLoss(logits, objetivos)
+      └─ generación: logits[-1] → softmax → argmax → añadir token
+```
+
+| Elemento | Valor en 06, 07 y 09; recuperado o reconstruido en 08 y 10 |
+| --- | --- |
+| Corpus | `el perro come el gato duerme` |
+| Vocabulario / IDs | `come: 0, duerme: 1, el: 2, gato: 3, perro: 4` |
+| Embedding / cabezas / bloques | `8 / 2 / 2` |
+| Dimensión por cabeza | `8 // 2 = 4` |
+| Feed-forward | `8 → 32 → 8`, con ReLU |
+| Máximo de posiciones | `max_seq_len=20` |
+| Longitud usada para entrenar | 5 tokens, una sola secuencia sin dimensión de batch |
+| Épocas y optimizador | 2000; Adam con `lr=0.01` |
+| Pérdida | `nn.CrossEntropyLoss()` sobre las cinco posiciones |
+
+### Entrenamiento autoregresivo
+
+El corpus tiene seis tokens. Se desplaza un token para crear cinco objetivos:
+
+```text
+Entrada X:  el     perro  come  el    gato
+Objetivo y: perro  come   el    gato  duerme
+
+IDs X: [2, 4, 0, 2, 3]
+IDs y: [4, 0, 2, 3, 1]
+```
+
+Cada forward calcula las cinco predicciones a la vez, pero la máscara causal impide consultar tokens posteriores a cada posición. Los logits tienen forma `[5, 5]` y los targets `[5]`, de tipo `torch.long`. Se pasan los logits directamente a `CrossEntropyLoss`, sin softmax previo.
+
+El ciclo es `forward → loss → zero_grad → backward → optimizer.step`. Se ajustan los embeddings de tokens y posiciones usadas, las proyecciones de atención, las redes feed-forward, las normalizaciones y la capa de salida.
+
+El autor compartió estos resultados del entrenamiento:
+
+| Medida | Valor reportado aproximado |
+| --- | ---: |
+| Pérdida en época 0 | 2.004 |
+| Pérdida final | 0.000035 |
+
+```text
+el       → perro
+perro    → come
+come     → el
+el       → gato
+gato     → duerme
+```
+
+Las métricas y predicciones provienen del contexto del autor, no de una nueva ejecución. El valor que los scripts imprimen como pérdida final es el calculado en el último forward del ciclo, antes de su última actualización de pesos.
+
+Los dos usos de `el` reciben objetivos diferentes porque sus representaciones disponen de distinta posición y contexto. Este ejemplo muestra que el modelo puede distinguir ambas apariciones; no permite aislar cuánto depende de posición frente a contexto, ni demuestra generalización.
+
+### Generación autoregresiva
+
+La inferencia parte únicamente de `el`. En cada paso se procesa el prefijo completo, se toma `logits[-1]`, se aplica softmax sobre el vocabulario y se elige `argmax`. El token elegido se añade a la entrada siguiente:
+
+```text
+el
+el perro
+el perro come
+el perro come el
+el perro come el gato
+el perro come el gato duerme
+```
+
+La llamada usa `cantidad_tokens=5`: cinco tokens nuevos y seis palabras en total. Es selección greedy, sin muestreo ni temperatura. `modelo.eval()` activa el modo de evaluación y `torch.no_grad()` evita construir el grafo de gradientes durante el forward. La generación no modifica los pesos.
+
+En entrenamiento se conocen todos los tokens del ejemplo y se predicen todas las posiciones con máscara; en generación cada nuevo token depende del anterior y se obtiene en una iteración separada.
+
+### Persistencia: pesos y checkpoint
+
+El primer formato, escrito por 07, es:
+
+```python
+torch.save(modelo.state_dict(), "minigpt.pth")
+```
+
+08 necesita reconstruir la misma arquitectura y el mismo vocabulario, incluido su orden. Lee el archivo con `torch.load(..., map_location=device)`, aplica `load_state_dict` y genera sin optimizador ni entrenamiento. Esto permite recuperar los parámetros aprendidos en otro proceso.
+
+09 amplía el formato:
+
+```text
+minigpt_checkpoint.pth
+├── model_state_dict
+│   └── parámetros del modelo
+├── config
+│   ├── embedding_dim: 8
+│   ├── num_heads: 2
+│   ├── num_blocks: 2
+│   └── max_seq_len: 20
+└── vocabulario: ['come', 'duerme', 'el', 'gato', 'perro']
+```
+
+10 lee `config` y `vocabulario`, reconstruye los diccionarios por el orden guardado, calcula `vocab_size=len(vocabulario)`, instancia MiniGPT y carga `model_state_dict`. El autor confirmó la configuración y el vocabulario recuperados, el mensaje de pesos cargados y la salida:
+
+```text
+el perro come el gato duerme
+```
+
+El checkpoint conserva la información necesaria para reconstruir esta instancia **junto con el código de la arquitectura**. Aunque el ejercicio lo llama «completo», su alcance es la recuperación para inferencia: no guarda el estado de Adam, la época/paso ni los estados aleatorios para reanudar exactamente el entrenamiento.
+
+### Comandos y archivos necesarios
+
+Desde la raíz del repositorio, con `.venv` activo, los primeros seis ejercicios pueden ejecutarse por separado:
+
+```bash
+python src/fase6/01_bloque_transformer.py
+python src/fase6/02_positional_embeddings.py
+python src/fase6/03_transformer_con_posicion.py
+python src/fase6/04_transformer_apilado.py
+python src/fase6/05_salida_vocabulario.py
+python src/fase6/06_entrenar_minigpt.py
+```
+
+Para probar el guardado y la carga de pesos, ejecutar en este orden:
+
+```bash
+python src/fase6/07_generar_texto.py
+python src/fase6/08_cargar_modelo.py
+```
+
+Para probar el checkpoint con configuración y vocabulario:
+
+```bash
+python src/fase6/09_checkpoint_completo.py
+python src/fase6/10_cargar_checkpoint.py
+```
+
+07 y 09 entrenan desde cero de forma independiente; no continúan el entrenamiento de 06 ni cargan un archivo previo. Cada uno sobrescribe su archivo de salida si ya existe. Si solo se quiere recuperar un modelo guardado, basta ejecutar 08 o 10 según el formato.
+
+Las rutas de los `.pth` son relativas al **directorio de ejecución**, no al de los scripts. Con estos comandos quedan en la raíz del repositorio. Un cargador fallará si su archivo no existe allí; ejecutar primero el guardado correspondiente o situarse en el directorio que contiene el archivo.
+
+### Límites y transición a Fase 7
+
+- Corpus de seis tokens y cinco palabras únicas, sin separación de entrenamiento y validación.
+- La pérdida pequeña y la secuencia reconstruida muestran ajuste al ejemplo; no prueban comprensión del español ni capacidad de generalizar.
+- No se fija una semilla; las pérdidas y generaciones pueden variar al volver a entrenar.
+- El vocabulario es cerrado, sin token desconocido ni token de fin de secuencia; la generación termina por la cantidad solicitada.
+- El modelo acepta una secuencia `[T]`, sin procesamiento por lotes.
+- `max_seq_len=20` limita cada entrada a posiciones 0–19. No hay recorte de contexto; pasar una entrada mayor excede la tabla posicional. Tener veinte posiciones disponibles no significa que se hayan entrenado todas: aquí solo se usan las primeras cinco.
+- No se registraron nuevas mediciones de tiempo, VRAM ni rendimiento comparado entre CPU y GPU.
+- No hay temperatura de muestreo, caché de atención ni estado de entrenamiento completo en el checkpoint.
+
+La Fase 6 queda cerrada: MiniGPT recibe tokens, se entrena, genera, guarda su aprendizaje y lo recupera. El siguiente paso es la [Fase 7](01_Plan_de_Trabajo.md#fase-7-entrenar-miniai), ampliando el corpus y evaluando el modelo con datos de validación.
 
 ---
 
@@ -582,14 +788,25 @@ MiniAI/
 │   │   ├── 05_contexto_siguiente_token.py
 │   │   ├── 06_modelo_lenguaje_basico.py
 │   │   └── 07_contexto_dos_tokens.py
-│   └── fase5/
-│       ├── 01_attention_intuicion.py
-│       ├── 02_query_key_value.py
-│       ├── 03_self_attention_todos_tokens.py
-│       ├── 04_scaled_dot_product_attention.py
-│       ├── 05_causal_attention.py
-│       ├── 06_attention_aprendible.py
-│       └── 07_multi_head_attention.py
+│   ├── fase5/
+│   │   ├── 01_attention_intuicion.py
+│   │   ├── 02_query_key_value.py
+│   │   ├── 03_self_attention_todos_tokens.py
+│   │   ├── 04_scaled_dot_product_attention.py
+│   │   ├── 05_causal_attention.py
+│   │   ├── 06_attention_aprendible.py
+│   │   └── 07_multi_head_attention.py
+│   └── fase6/
+│       ├── 01_bloque_transformer.py
+│       ├── 02_positional_embeddings.py
+│       ├── 03_transformer_con_posicion.py
+│       ├── 04_transformer_apilado.py
+│       ├── 05_salida_vocabulario.py
+│       ├── 06_entrenar_minigpt.py
+│       ├── 07_generar_texto.py
+│       ├── 08_cargar_modelo.py
+│       ├── 09_checkpoint_completo.py
+│       └── 10_cargar_checkpoint.py
 ├── .venv/
 ├── .gitignore
 └── README.md

@@ -4,7 +4,7 @@ Este documento reúne los conceptos aprendidos durante la construcción de MiniA
 
 La intención no es memorizar todas las definiciones, sino tener una referencia rápida que podamos ampliar conforme avance el proyecto.
 
-**Última ampliación:** 26 de septiembre de 2026, [conceptos de la Fase 5](#fase-5-attention-y-representaciones-contextualizadas). También se conservan los [conceptos de la Fase 4](#fase-4-del-texto-a-la-predicción). Los ejercicios y resultados de atención están en la [memoria técnica](02_Memoria_Tecnica.md#fase-5-attention).
+**Última ampliación:** 27 de septiembre de 2026, [conceptos de la Fase 6](#fase-6-transformer-entrenamiento-y-persistencia). También se conservan los conceptos de [Fase 4](#fase-4-del-texto-a-la-predicción) y [Fase 5](#fase-5-attention-y-representaciones-contextualizadas). Los ejercicios, resultados y límites de MiniGPT están en la [memoria técnica](02_Memoria_Tecnica.md#fase-6-transformer).
 
 ---
 
@@ -1097,6 +1097,170 @@ La salida contextualizada contiene la combinación de los values; no debe confun
 
 ## Puente hacia el Transformer
 
-La [Fase 6](01_Plan_de_Trabajo.md#fase-6-construir-nuestro-transformer) integrará la atención con conexiones residuales, Layer Normalization, una red feed-forward e información posicional.
+La [Fase 6](01_Plan_de_Trabajo.md#fase-6-construir-nuestro-transformer) integró la atención con conexiones residuales, Layer Normalization, una red feed-forward e información posicional.
 
-La Fase 5 deja listo el mecanismo de atención para una secuencia. Todavía faltan esos componentes, una salida sobre el vocabulario y la integración del entrenamiento para construir el modelo de lenguaje con Transformer.
+La Fase 5 dejó listo el mecanismo de atención para una secuencia. La Fase 6 añadió esos componentes, la salida sobre el vocabulario y el entrenamiento para construir MiniGPT.
+
+
+---
+
+## Fase 6: Transformer, entrenamiento y persistencia
+
+En esta fase se conectaron los conceptos anteriores en un modelo de lenguaje pequeño:
+
+```text
+Texto → tokens → IDs → embeddings de token + posición
+  → bloques Transformer → logits
+  → entrenamiento → generación → guardado → recuperación
+```
+
+## Bloque Transformer
+
+Un bloque combina atención causal, conexiones residuales, normalización y una red feed-forward. Nuestra variante aplica LayerNorm después de cada suma residual:
+
+```python
+x = norm1(x + attention(x))
+x = norm2(x + feed_forward(x))
+```
+
+Conserva la forma `[tokens, embedding_dim]`. El primer ejemplo transforma `[3, 4]` en `[3, 4]`, lo que permite conectar otro bloque a continuación. Conservar la forma no significa conservar los mismos valores.
+
+---
+
+## Conexión residual
+
+Una conexión residual suma la entrada y una transformación de ella: `x + f(x)`.
+
+La suma mantiene un camino directo para la información y los gradientes, mientras la rama `f(x)` aporta una transformación aprendida. Ambas ramas deben tener formas compatibles. No es una concatenación: la dimensión de la salida sigue siendo la misma.
+
+---
+
+## LayerNorm y post-normalización
+
+`nn.LayerNorm(embedding_dim)` normaliza las características del vector de cada token. También aprende una escala y un desplazamiento por característica.
+
+En nuestro bloque, la normalización ocurre **después** de sumar la conexión residual; por eso se habla de post-normalización o *post-norm*. No normaliza mezclando todos los tokens ni usa estadísticas de otros ejemplos del batch.
+
+---
+
+## Feed-forward por posición
+
+La red feed-forward procesa cada posición con las mismas capas:
+
+```text
+Linear(D, 4D) → ReLU → Linear(4D, D)
+```
+
+Con `D=8`, expande el vector a 32 componentes y lo devuelve a 8. Attention intercambia información entre tokens; la red feed-forward transforma las características de cada token sin consultar directamente otras posiciones. Puede procesar información de contexto porque recibe la salida de atención.
+
+---
+
+## Embeddings posicionales aprendidos
+
+El embedding del token representa su identidad; el embedding posicional aporta su lugar en la secuencia:
+
+```text
+entrada[i] = token_embedding(token_id[i]) + position_embedding(i)
+```
+
+Ambos tienen la misma dimensión y se suman, no se concatenan. Las posiciones empiezan en cero. `nn.Embedding(max_seq_len, D)` almacena una tabla entrenable; en este proyecto no se usa una fórmula sinusoidal.
+
+Un mismo `el` en posiciones distintas puede comenzar con representaciones diferentes. Una tabla de veinte posiciones admite índices 0–19, pero el entrenamiento con cinco tokens solo utiliza las primeras cinco.
+
+---
+
+## Apilado de bloques
+
+Cada bloque recibe la representación producida por el anterior y la transforma de nuevo. `nn.ModuleList` registra los bloques y sus parámetros; el forward los ejecuta mediante un bucle.
+
+En el ejercicio 04 hay tres bloques con dimensión 4; en el MiniGPT entrenado hay dos con dimensión 8. Los bloques tienen parámetros independientes. Apilar bloques similares aumenta la profundidad, pero no garantiza por sí solo capacidad lingüística.
+
+---
+
+## Proyección hacia el vocabulario
+
+El Transformer produce un vector por posición. La capa `nn.Linear(embedding_dim, vocab_size)` lo transforma en un logit por token posible:
+
+```text
+Representaciones [T, 8] → Linear(8, 5) → logits [T, 5]
+```
+
+Los logits son puntuaciones sin normalizar. Softmax sobre el vocabulario produce probabilidades del siguiente token; estos valores son distintos de los pesos de atención sobre posiciones del contexto.
+
+---
+
+## Objetivos desplazados y entrenamiento causal
+
+Para predecir el siguiente token, se desplaza la secuencia una posición:
+
+```text
+Entrada:  el     perro  come  el    gato
+Objetivo: perro  come   el    gato  duerme
+```
+
+El modelo calcula todas esas predicciones en un forward. La máscara causal asegura que la predicción de una posición solo dependa de esa posición y de las anteriores, aunque se haya entregado toda la entrada al modelo.
+
+`CrossEntropyLoss` recibe directamente logits `[T, vocab_size]` y objetivos enteros `[T]`. En estos scripts no hay dimensión de batch: cada fila corresponde a una posición de la única secuencia. El ciclo `forward → loss → zero_grad → backward → step` ajusta los parámetros, incluidos los embeddings utilizados.
+
+---
+
+## Generación autoregresiva y selección greedy
+
+Generar autoregresivamente significa añadir cada predicción al contexto para obtener la siguiente:
+
+```text
+el → el perro → el perro come → el perro come el
+   → el perro come el gato → el perro come el gato duerme
+```
+
+Se utiliza la última fila de logits, `logits[-1]`, porque representa la continuación del prefijo actual. `argmax` elige el token con mayor puntuación o probabilidad: es selección greedy. No es muestreo aleatorio.
+
+Los scripts aplican softmax antes de `argmax`; seleccionar el máximo directamente en los logits daría el mismo orden. No hay temperatura de generación ni token de fin: se solicitan cinco tokens nuevos.
+
+---
+
+## Modo de evaluación y ausencia de gradientes
+
+`modelo.eval()` cambia el comportamiento de capas que distinguen entrenamiento y evaluación, como dropout. No desactiva por sí mismo autograd ni carga los pesos aprendidos.
+
+`torch.no_grad()` evita registrar el grafo de gradientes durante la inferencia. En nuestro modelo no hay dropout ni BatchNorm, pero se utiliza el patrón de evaluación y ausencia de gradientes para expresar que se está generando, sin actualizar parámetros.
+
+---
+
+## state_dict y persistencia del aprendizaje
+
+`modelo.state_dict()` contiene los parámetros y buffers persistentes registrados por el modelo. Guardarlo conserva los valores aprendidos:
+
+```python
+torch.save(modelo.state_dict(), "minigpt.pth")
+```
+
+Para usarlos en otro proceso se necesita construir una arquitectura compatible y llamar a `load_state_dict`. El archivo de pesos por sí solo no contiene la definición de las clases ni nuestro vocabulario.
+
+El vocabulario debe conservar también el orden: cambiar qué palabra representa cada ID cambia la interpretación de las entradas y las salidas, aunque el número de palabras sea el mismo.
+
+---
+
+## Checkpoint para reconstruir el modelo
+
+El checkpoint de Fase 6 reúne:
+
+| Clave | Qué conserva |
+| --- | --- |
+| `model_state_dict` | Parámetros aprendidos de MiniGPT. |
+| `config` | Dimensión del embedding, cabezas, bloques y máximo de posiciones. |
+| `vocabulario` | Palabras en el orden que define sus IDs. |
+
+El cargador obtiene la configuración y el vocabulario, reconstruye MiniGPT, carga los pesos y genera. `map_location=device` sitúa los tensores cargados en el dispositivo seleccionado.
+
+Este checkpoint sirve para recuperar la inferencia junto con el código de la arquitectura. Para reanudar exactamente el entrenamiento haría falta conservar también el estado del optimizador, el paso o época y los estados aleatorios pertinentes.
+
+---
+
+## Memorización y generalización en MiniGPT
+
+Reproducir `el perro come el gato duerme` después de entrenar y después de cargar el checkpoint demuestra que se ajustaron y recuperaron parámetros útiles para ese ejemplo.
+
+La pérdida reportada, aproximadamente `0.000035`, se mide sobre el mismo corpus diminuto usado para entrenar. No mide el desempeño con frases nuevas. Distinguir los dos usos de `el` es compatible con aprovechar posición y contexto; no demuestra comprensión del español.
+
+La [Fase 7](01_Plan_de_Trabajo.md#fase-7-entrenar-miniai) continuará con más datos, validación y seguimiento del entrenamiento para estudiar ese límite.

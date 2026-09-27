@@ -5,9 +5,9 @@ Este documento organiza el recorrido de MiniAI: desde una neurona artificial has
 La intención es avanzar por fases, entender cada componente y registrar resultados antes de pasar al siguiente nivel.
 
 **Duración estimada total:** 44–60 horas, según la suma de las fases.  
-**Último avance registrado:** 26 de septiembre de 2026.
+**Último avance registrado:** 27 de septiembre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 6, construir nuestro Transformer.
+**Punto para retomar:** Fase 7, ampliar el corpus y evaluar el entrenamiento de MiniAI.
 
 Documentos relacionados: [memoria técnica](02_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -63,7 +63,7 @@ Cada fase incluye un objetivo, tareas, conceptos clave, un criterio de salida y 
 
 ## Estado actual y siguiente sesión
 
-El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **26 de septiembre de 2026**.
+El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **27 de septiembre de 2026**.
 
 | Fase | Avance registrado |
 | --- | --- |
@@ -73,21 +73,22 @@ El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-
 | 3. PyTorch y GPU | Completada: tensores, CUDA, XOR en PyTorch, gradientes reales, optimizador y benchmark CPU vs GPU. |
 | 4. Tokenización y embeddings | Completada: siete ejercicios ejecutados por el autor, incluyendo predicción con uno y dos tokens de contexto. |
 | 5. Attention | Completada: siete ejercicios, máscara causal, proyecciones entrenables y dos cabezas con proyección final. |
-| 6–11 | Pendientes en el registro de avance. |
+| 6. Transformer | Completada: diez ejercicios, MiniGPT entrenable, generación autoregresiva y persistencia con pesos, configuración y vocabulario. |
+| 7–11 | Pendientes en el registro de avance. |
 
-Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución. La Fase 5 se cierra con la confirmación del autor, sus resultados de ejemplo y la revisión de los siete scripts de `src/fase5`; sus módulos de atención se ejecutan sin un ciclo de entrenamiento.
+Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución. La Fase 5 se cierra con la confirmación del autor, sus resultados de ejemplo y la revisión de los siete scripts de `src/fase5`; sus módulos de atención se ejecutan sin un ciclo de entrenamiento. La Fase 6 se cierra con el contexto y los resultados compartidos por el autor y la revisión de los diez scripts de `src/fase6`; incluye entrenamiento y carga para inferencia, sin nuevas ejecuciones durante esta actualización documental.
 
 ### Primera tarea al retomar
 
-Comenzar la [Fase 6](#fase-6-construir-nuestro-transformer) a partir de `MultiHeadAttention` del ejercicio 07 de Fase 5.
+Comenzar la [Fase 7](#fase-7-entrenar-miniai) a partir del MiniGPT y el checkpoint construidos en Fase 6.
 
-- [ ] Repasar la salida `[seq_len, embedding_dim]` y la máscara causal.
-- [ ] Añadir conexiones residuales y normalización por capa.
-- [ ] Incorporar una red feed-forward por posición.
-- [ ] Añadir embeddings de tokens e información posicional.
-- [ ] Integrar las piezas en un bloque Transformer y comprobar sus dimensiones.
+- [ ] Elegir un corpus más amplio y definir cómo tokenizarlo.
+- [ ] Separar entrenamiento y validación antes de preparar ejemplos.
+- [ ] Preparar ventanas de contexto y lotes, adaptando el modelo a una dimensión de batch.
+- [ ] Registrar pérdida de entrenamiento y validación y comparar generaciones periódicas.
+- [ ] Ampliar los checkpoints con estado del optimizador y paso de entrenamiento para poder reanudarlo.
 
-Los comandos para repasar la atención están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido).
+Los comandos para recuperar el modelo sin reentrenar están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido).
 
 ---
 
@@ -103,7 +104,7 @@ Los tiempos son estimaciones de dedicación por fase, no horas medidas ni fechas
 | 3 | PyTorch y GPU | 3–4 h | Completada |
 | 4 | Tokenización, embeddings y predicción de siguiente token | 4–5 h | Completada |
 | 5 | Self-attention causal y multi-head attention | 5–6 h | Completada |
-| 6 | Transformer | 6–8 h | Pendiente |
+| 6 | Transformer | 6–8 h | Completada |
 | 7 | Entrenamiento de MiniAI | 4–6 h | Pendiente |
 | 8 | API e interfaz | 3–4 h | Pendiente |
 | 9 | RAG y herramientas | 4–5 h | Pendiente |
@@ -505,75 +506,83 @@ Podemos inspeccionar cómo cada posición combina información de las posiciones
 
 ### Resultado alcanzado y siguiente fase
 
-Multi-Head Causal Self-Attention implementada y ejecutada. La [Fase 6](#fase-6-construir-nuestro-transformer) la integrará con conexiones residuales, LayerNorm, una red feed-forward e información posicional para formar un bloque Transformer.
+Multi-Head Causal Self-Attention implementada y ejecutada. La [Fase 6](#fase-6-construir-nuestro-transformer) la integró con conexiones residuales, LayerNorm, una red feed-forward e información posicional para formar un bloque Transformer.
 
 ---
 
 ## Fase 6: Construir nuestro Transformer
 
-**Estado:** pendiente.  
-**Tiempo estimado:** 6–8 horas.
+**Estado:** completada; cierre registrado el 27 de septiembre de 2026, según la confirmación del autor.
+
+**Tiempo estimado:** 6–8 horas; no se midió la duración real.
 
 ### Objetivo
 
-Ensamblar las piezas anteriores en un modelo generativo pequeño de tipo GPT.
+Ensamblar las piezas anteriores en un Transformer autoregresivo pequeño, entrenarlo para predecir el siguiente token y recuperar su aprendizaje desde un archivo.
 
-### Tareas
+### Tareas completadas
 
-- Crear embeddings de tokens.
-- Añadir información posicional.
-- Crear un bloque Transformer.
-- Implementar self-attention.
-- Implementar un MLP.
-- Añadir conexiones residuales.
-- Añadir normalización.
-- Apilar múltiples bloques.
-- Crear la capa de salida.
-- Generar logits.
-- Convertir logits en probabilidades.
-- Implementar la generación autorregresiva.
+- [x] Integrar Multi-Head Causal Self-Attention en un bloque Transformer.
+- [x] Añadir conexiones residuales y LayerNorm después de cada suma.
+- [x] Implementar una red feed-forward por posición con expansión a cuatro veces la dimensión y ReLU.
+- [x] Sumar embeddings de tokens y embeddings posicionales entrenables.
+- [x] Recibir IDs directamente y apilar bloques con `nn.ModuleList`.
+- [x] Proyectar las representaciones hacia logits del vocabulario.
+- [x] Preparar entrada y objetivo desplazados un token.
+- [x] Entrenar con `CrossEntropyLoss`, backpropagation y Adam.
+- [x] Generar cinco tokens a partir de `el` con selección por `argmax`.
+- [x] Guardar y recuperar un `state_dict` sin volver a entrenar.
+- [x] Guardar pesos, configuración y vocabulario en un checkpoint y reconstruir MiniGPT.
 
-### Arquitectura conceptual
+### Recorrido implementado
+
+Los [diez ejercicios y sus comandos](02_Memoria_Tecnica.md#fase-6-transformer) avanzan desde el bloque básico (01), posiciones (02), integración con IDs (03) y apilado (04), hasta salida al vocabulario (05), entrenamiento (06), generación y guardado (07), carga de pesos (08), checkpoint completo (09) y recuperación del checkpoint (10).
 
 ```text
-Tokens
-  ↓
-Embeddings
-  ↓
-Información posicional
-  ↓
-Bloque Transformer
-  ↓
-Bloque Transformer
-  ↓
-Capa lineal
-  ↓
-Logits
-  ↓
-Selección del siguiente token
+Texto → split() → IDs
+  → token embeddings + position embeddings
+  → bloque Transformer × 2
+      atención causal → residual + LayerNorm
+      → feed-forward → residual + LayerNorm
+  → Linear → logits
+  → softmax → argmax → siguiente token → ampliar contexto
 ```
 
-### Configuración inicial sugerida
+### Configuración utilizada
 
-| Elemento | Propuesta |
+| Elemento | Valor en el modelo entrenado |
 | --- | --- |
-| Contexto | 128 tokens |
-| Dimensión del embedding | 128–256 |
-| Cabezas de atención | 4 |
-| Capas | 4 |
-| Parámetros | Unos pocos millones; por confirmar al definir el modelo y el vocabulario. |
+| Corpus | `el perro come el gato duerme` |
+| Vocabulario | 5 palabras, ordenadas alfabéticamente |
+| Longitud de entrada de entrenamiento | 5 tokens |
+| Posiciones disponibles | 20 (`max_seq_len`) |
+| Dimensión del embedding | 8 |
+| Cabezas de atención | 2; dimensión 4 por cabeza |
+| Bloques Transformer | 2 |
+| Feed-forward | `8 → 32 → 8`, con ReLU |
+| Optimizador y pérdida | Adam, `lr=0.01`; `CrossEntropyLoss` |
+| Épocas | 2000 en cada script de entrenamiento (06, 07 y 09) |
+| Dispositivo | CUDA si está disponible; CPU en caso contrario |
+
+Los primeros ejercicios usan dimensión 4; el ejemplo de apilado usa tres bloques. La propuesta original de contexto 128, embeddings 128–256 y cuatro bloques queda como referencia para una ampliación futura, no como configuración implementada.
+
+### Registro del hito completado
+
+El autor reportó una pérdida inicial aproximada de `2.004` y final de `0.000035`, con las cinco predicciones de la secuencia correctas. El modelo generó `el perro come el gato duerme` y volvió a producirla después de cargar los pesos y después de recuperar configuración, vocabulario y parámetros desde el checkpoint. Son resultados reportados, no mediciones nuevas de esta actualización.
+
+El checkpoint contiene `model_state_dict`, `config` y `vocabulario`. Permite reconstruir el modelo para inferencia con el código de la arquitectura; todavía no incluye estado del optimizador ni época para reanudar exactamente el entrenamiento.
 
 ### Conceptos clave
 
-Bloque Transformer, conexión residual, normalización por capa (`layer normalization`), MLP, logits y generación autorregresiva.
+Bloque Transformer, conexiones residuales, LayerNorm, feed-forward, embeddings posicionales, apilado, logits, objetivos desplazados, entrenamiento causal, generación autoregresiva, `state_dict` y checkpoint.
 
-### Criterio de salida
+### Criterio de salida alcanzado
 
-El modelo acepta tokens y produce una distribución sobre el siguiente token.
+MiniGPT recibe IDs, produce logits por posición, se entrena con la tarea de siguiente token, genera la secuencia de ejemplo y recupera lo aprendido sin reentrenar.
 
-### Resultado esperado
+### Resultado alcanzado y siguiente fase
 
-Primer MiniGPT construido por nosotros.
+Primer Transformer autoregresivo entrenable y persistente construido con componentes de PyTorch. El corpus diminuto permite demostrar memorización y persistencia, pero no comprensión del español ni generalización. La Fase 7 ampliará los datos y añadirá validación, lotes, seguimiento de métricas y experimentos de generación.
 
 ---
 
@@ -584,7 +593,7 @@ Primer MiniGPT construido por nosotros.
 
 ### Objetivo
 
-Entrenar el Transformer y observar cómo pasa de ruido a patrones de lenguaje.
+Ampliar el entrenamiento del MiniGPT de Fase 6 a un corpus más variado y evaluar su comportamiento con datos de validación. El ciclo básico de entrenamiento, generación y guardado ya existe; esta fase se centra en medir aprendizaje y generalización más allá de la secuencia memorizada.
 
 ### Tareas
 
@@ -594,7 +603,7 @@ Entrenar el Transformer y observar cómo pasa de ruido a patrones de lenguaje.
 - Configurar hiperparámetros.
 - Entrenar por pasos (`steps`).
 - Registrar la pérdida.
-- Guardar checkpoints.
+- Ampliar los checkpoints con estado del optimizador y paso de entrenamiento.
 - Probar generaciones periódicas.
 - Detectar overfitting.
 - Ajustar el tamaño de lote, la tasa de aprendizaje y la longitud de contexto.
