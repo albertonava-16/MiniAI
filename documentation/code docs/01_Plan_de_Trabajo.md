@@ -5,9 +5,9 @@ Este documento organiza el recorrido de MiniAI: desde una neurona artificial has
 La intención es avanzar por fases, entender cada componente y registrar resultados antes de pasar al siguiente nivel.
 
 **Duración estimada total:** 44–60 horas, según la suma de las fases.  
-**Último avance registrado:** 27 de septiembre de 2026.
+**Último avance registrado:** 1 de octubre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 7, ampliar el corpus y evaluar el entrenamiento de MiniAI.
+**Punto para retomar:** Fase 8, separar la inferencia y exponer MiniAI como servicio.
 
 Documentos relacionados: [memoria técnica](02_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -63,7 +63,7 @@ Cada fase incluye un objetivo, tareas, conceptos clave, un criterio de salida y 
 
 ## Estado actual y siguiente sesión
 
-El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **27 de septiembre de 2026**.
+El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **1 de octubre de 2026**.
 
 | Fase | Avance registrado |
 | --- | --- |
@@ -74,21 +74,22 @@ El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-
 | 4. Tokenización y embeddings | Completada: siete ejercicios ejecutados por el autor, incluyendo predicción con uno y dos tokens de contexto. |
 | 5. Attention | Completada: siete ejercicios, máscara causal, proyecciones entrenables y dos cabezas con proyección final. |
 | 6. Transformer | Completada: diez ejercicios, MiniGPT entrenable, generación autoregresiva y persistencia con pesos, configuración y vocabulario. |
-| 7–11 | Pendientes en el registro de avance. |
+| 7. Entrenar MiniAI | Completada: diez ejercicios con train/validation, batches, regularización, early stopping, BOS/EOS, sampling y checkpoint final. |
+| 8–11 | Pendientes en el registro de avance. |
 
-Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución. La Fase 5 se cierra con la confirmación del autor, sus resultados de ejemplo y la revisión de los siete scripts de `src/fase5`; sus módulos de atención se ejecutan sin un ciclo de entrenamiento. La Fase 6 se cierra con el contexto y los resultados compartidos por el autor y la revisión de los diez scripts de `src/fase6`; incluye entrenamiento y carga para inferencia, sin nuevas ejecuciones durante esta actualización documental.
+Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución. La Fase 5 se cierra con la confirmación del autor, sus resultados de ejemplo y la revisión de los siete scripts de `src/fase5`; sus módulos de atención se ejecutan sin un ciclo de entrenamiento. La Fase 6 se cierra con el contexto y los resultados compartidos por el autor y la revisión de los diez scripts de `src/fase6`. La Fase 7 se cierra con la revisión de sus diez scripts y la última ejecución reportada por el autor; no se volvió a entrenar el modelo durante esta actualización documental.
 
 ### Primera tarea al retomar
 
-Comenzar la [Fase 7](#fase-7-entrenar-miniai) a partir del MiniGPT y el checkpoint construidos en Fase 6.
+Comenzar la [Fase 8](#fase-8-convertir-miniai-en-servicio) a partir del checkpoint final de Fase 7.
 
-- [ ] Elegir un corpus más amplio y definir cómo tokenizarlo.
-- [ ] Separar entrenamiento y validación antes de preparar ejemplos.
-- [ ] Preparar ventanas de contexto y lotes, adaptando el modelo a una dimensión de batch.
-- [ ] Registrar pérdida de entrenamiento y validación y comparar generaciones periódicas.
-- [ ] Ampliar los checkpoints con estado del optimizador y paso de entrenamiento para poder reanudarlo.
+- [ ] Extraer las clases del modelo y la función de generación a módulos reutilizables.
+- [ ] Crear un cargador para `miniai_fase7_checkpoint.pth` que reconstruya el modelo sin entrenarlo.
+- [ ] Definir un endpoint de inferencia con FastAPI y un esquema de entrada/salida.
+- [ ] Validar prompts, parámetros de sampling y tokens desconocidos.
+- [ ] Medir latencia y comprobar una petición local de extremo a extremo.
 
-Los comandos para recuperar el modelo sin reentrenar están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido).
+La ubicación del checkpoint final y el comando para reproducirlo están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido). La carga independiente sin reentrenar se implementará al comenzar la Fase 8.
 
 ---
 
@@ -105,7 +106,7 @@ Los tiempos son estimaciones de dedicación por fase, no horas medidas ni fechas
 | 4 | Tokenización, embeddings y predicción de siguiente token | 4–5 h | Completada |
 | 5 | Self-attention causal y multi-head attention | 5–6 h | Completada |
 | 6 | Transformer | 6–8 h | Completada |
-| 7 | Entrenamiento de MiniAI | 4–6 h | Pendiente |
+| 7 | Entrenamiento de MiniAI | 4–6 h | Completada |
 | 8 | API e interfaz | 3–4 h | Pendiente |
 | 9 | RAG y herramientas | 4–5 h | Pendiente |
 | 10 | MCP y arquitectura distribuida | 4–6 h | Pendiente |
@@ -582,56 +583,95 @@ MiniGPT recibe IDs, produce logits por posición, se entrena con la tarea de sig
 
 ### Resultado alcanzado y siguiente fase
 
-Primer Transformer autoregresivo entrenable y persistente construido con componentes de PyTorch. El corpus diminuto permite demostrar memorización y persistencia, pero no comprensión del español ni generalización. La Fase 7 ampliará los datos y añadirá validación, lotes, seguimiento de métricas y experimentos de generación.
+Primer Transformer autoregresivo entrenable y persistente construido con componentes de PyTorch. El corpus diminuto permite demostrar memorización y persistencia, pero no comprensión del español ni generalización. La Fase 7 amplió los datos y añadió validación, lotes, seguimiento de métricas y experimentos de generación.
 
 ---
 
 ## Fase 7: Entrenar MiniAI
 
-**Estado:** pendiente.  
+**Estado:** completada.
 **Tiempo estimado:** 4–6 horas.
 
 ### Objetivo
 
-Ampliar el entrenamiento del MiniGPT de Fase 6 a un corpus más variado y evaluar su comportamiento con datos de validación. El ciclo básico de entrenamiento, generación y guardado ya existe; esta fase se centra en medir aprendizaje y generalización más allá de la secuencia memorizada.
+Ampliar el entrenamiento del MiniGPT de Fase 6 a un corpus más variado y evaluar su comportamiento con datos de validación. La fase estudia aprendizaje y generalización más allá de una secuencia memorizada, además de incorporar estrategias de decodificación y un checkpoint final.
 
-### Tareas
+### Tareas completadas
 
-- Elegir un corpus.
-- Preparar el dataset.
-- Separar los datos de entrenamiento y validación (`train/validation`).
-- Configurar hiperparámetros.
-- Entrenar por pasos (`steps`).
-- Registrar la pérdida.
-- Ampliar los checkpoints con estado del optimizador y paso de entrenamiento.
-- Probar generaciones periódicas.
-- Detectar overfitting.
-- Ajustar el tamaño de lote, la tasa de aprendizaje y la longitud de contexto.
-- Medir temperatura del hardware y uso de VRAM.
+- Ampliar el corpus a 30 oraciones y separar seis para validación.
+- Convertir las frases en ventanas de contexto y objetivos de siguiente token.
+- Entrenar con `DataLoader` y mini-batches de ocho ejemplos.
+- Adaptar attention y el Transformer a tensores con dimensión batch.
+- Comparar train loss y validation loss para detectar overfitting.
+- Añadir dropout, AdamW, weight decay y early stopping.
+- Restaurar los pesos correspondientes al mejor validation loss.
+- Añadir `<BOS>` y `<EOS>` para modelar inicio y fin de secuencia.
+- Comparar argmax con sampling y experimentar con temperature, top-k y top-p.
+- Guardar pesos, configuración, vocabulario, tokens especiales y parámetros de generación en `miniai_fase7_checkpoint.pth`.
 
-### Ejemplo de evolución
+### Ejercicios implementados
 
-Ejemplo ilustrativo del cambio que se busca observar; no son resultados ya obtenidos ni una garantía para un número concreto de pasos:
+| Archivo | Progreso principal |
+| --- | --- |
+| `01_preparar_dataset.py` | Tokenización, vocabulario y primera separación train/validation. |
+| `02_crear_batches.py` | Ventanas de contexto y tensores de entradas/objetivos. |
+| `03_entrenar_con_batches.py` | DataLoader, mini-batches y soporte batch en el modelo. |
+| `04_mas_datos.py` | Corpus ampliado y observación de overfitting. |
+| `05_entrenamiento_regularizado.py` | Dropout, AdamW, weight decay y early stopping. |
+| `06_probar_generacion.py` | Generación desde varios prompts. |
+| `07_tokens_especiales.py` | Tokens BOS/EOS y finalización aprendida. |
+| `08_sampling_temperature_topk.py` | Sampling, temperature y top-k. |
+| `09_top_p_sampling.py` | Nucleus sampling con distintos valores de top-p. |
+| `10_checkpoint_fase7.py` | Checkpoint final y configuración reproducible para inferencia. |
+
+### Configuración final
+
+| Elemento | Valor |
+| --- | --- |
+| Corpus | 30 oraciones; 24 train y 6 validation |
+| Ventana de contexto | 6 tokens |
+| Batch size | 8 |
+| Embedding | 16 |
+| Cabezas / bloques | 4 / 2 |
+| Dropout | 0.20 |
+| Optimizador | AdamW |
+| Learning rate / weight decay | 0.003 / 0.01 |
+| Early stopping | patience 8; evaluación cada 20 épocas |
+| Decodificación guardada | temperature 1.0, top-k desactivado, top-p 0.90 |
+
+### Registro del hito completado
+
+El experimento inicial llegó aproximadamente a train loss `0.205` y validation loss `6.39`, señal clara de overfitting. Con regularización y early stopping, la última ejecución reportada alcanzó:
 
 ```text
-Paso 0:
-"casa perro java función la de"
-
-Paso 5000:
-"Java es un lenguaje de..."
+Mejor Validation Loss: 1.0344474554061889
+Checkpoint: miniai_fase7_checkpoint.pth
 ```
+
+Entre las generaciones reportadas para `el perro` aparecen:
+
+```text
+el perro mira por la ventana
+el perro juega con el niño
+el perro duerme en la casa
+el perro come su comida
+```
+
+También aparecieron combinaciones incorrectas como `el perro duerme en la pelota`. El resultado muestra recombinación de patrones y finalización mediante EOS dentro del vocabulario entrenado; no demuestra comprensión general del español.
 
 ### Conceptos clave
 
-Ciclo de entrenamiento (`training loop`), pérdida de validación, checkpoint, hiperparámetro, overfitting, muestreo (`sampling`) y temperatura de generación (`temperature`).
+Dataset, train/validation, batch, generalización, overfitting, dropout, AdamW, weight decay, early stopping, BOS/EOS, sampling, temperature, top-k, top-p, decodificación y checkpoint.
 
-### Criterio de salida
+### Criterio de salida alcanzado
 
-El modelo genera texto con estructura reconocible.
+El modelo se entrena con múltiples ejemplos, se evalúa en datos separados, conserva los mejores pesos y genera texto con estructura reconocible usando distintas estrategias de decodificación.
 
-### Resultado esperado
+### Resultado alcanzado y siguiente fase
 
-Nuestro propio modelo generativo entrenado localmente.
+MiniAI pasó de memorizar una secuencia a aprender distribuciones sobre un corpus pequeño, medir generalización y generar continuaciones variadas. El checkpoint final conserva lo necesario para reconstruir inferencia junto con el código, pero no guarda `optimizer.state_dict()`, época ni estados aleatorios para reanudar exactamente el entrenamiento.
+
+La [Fase 8](#fase-8-convertir-miniai-en-servicio) separará la carga y la inferencia del script de entrenamiento y expondrá el modelo mediante una API.
 
 ---
 

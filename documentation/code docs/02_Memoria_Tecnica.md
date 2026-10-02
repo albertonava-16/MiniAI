@@ -4,11 +4,11 @@ Este documento reúne la configuración del entorno, los comandos de trabajo y l
 
 La intención es tener una referencia rápida para retomar el proyecto después de reiniciar la computadora o al comenzar una nueva fase.
 
-**Último avance registrado:** 27 de septiembre de 2026.
+**Último avance registrado:** 1 de octubre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 7, ampliar el corpus y evaluar el entrenamiento de MiniAI.
+**Punto para retomar:** Fase 8, separar la inferencia y exponer MiniAI como servicio.
 
-Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4, 5 y 6 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. En Fase 6 se documentan el entrenamiento, la generación y la recuperación desde archivos; las pérdidas y salidas numéricas proceden del contexto compartido por el autor. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevas pérdidas, tiempos ni resultados de CUDA.
+Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4 a 7 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. En Fases 6 y 7 se documentan entrenamiento, generación y persistencia; las pérdidas y salidas numéricas proceden del contexto compartido por el autor. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevos tiempos, uso de VRAM ni resultados de CUDA.
 
 Documentos relacionados: [plan de trabajo](01_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -30,6 +30,7 @@ Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas act
 - [Fase 4: Tokenización, embeddings y predicción de siguiente token](#fase-4-tokenización-embeddings-y-predicción-de-siguiente-token)
 - [Fase 5: Attention](#fase-5-attention)
 - [Fase 6: Transformer](#fase-6-transformer)
+- [Fase 7: Entrenamiento, generalización y generación](#fase-7-entrenamiento-generalización-y-generación)
 - [Primera prueba de GPU](#primera-prueba-de-gpu)
 - [Rutina para retomar el proyecto](#rutina-para-retomar-el-proyecto)
 - [Comandos de diagnóstico](#comandos-de-diagnóstico)
@@ -50,19 +51,19 @@ code .
 
 Confirmar que aparezca `(.venv)` al inicio de la terminal.
 
-La Fase 6 está completada y el siguiente trabajo es ampliar el corpus y evaluar el entrenamiento en Fase 7. Para recuperar MiniGPT sin reentrenarlo, ejecutar desde la raíz donde se guardó `minigpt_checkpoint.pth`:
+La Fase 7 está completada. El siguiente trabajo es separar la carga y la inferencia del entrenamiento para exponer MiniAI como servicio en Fase 8. El checkpoint final de Fase 7 se encuentra en la raíz del proyecto:
 
-```bash
-python src/fase6/10_cargar_checkpoint.py
+```text
+miniai_fase7_checkpoint.pth
 ```
 
-Si aún no existe ese archivo, crearlo primero con:
+Para reproducir el entrenamiento final, las pruebas de top-p y el guardado del checkpoint:
 
 ```bash
-python src/fase6/09_checkpoint_completo.py
+python src/fase7/10_checkpoint_fase7.py
 ```
 
-El script 09 entrena un modelo nuevo durante 2000 épocas y guarda el checkpoint; repetirlo sobrescribe ese archivo. El script 10 recupera configuración, vocabulario y pesos, y genera cinco tokens a partir de `el` sin entrenar. Ambos eligen CUDA si está disponible o CPU en caso contrario. Los comandos y dependencias de los diez ejercicios están en [Fase 6](#fase-6-transformer).
+El script entrena un modelo nuevo, restaura los pesos con mejor validation loss, sobrescribe el checkpoint y genera muestras con distintos valores de top-p. El archivo permite reconstruir inferencia junto con el código, pero aún no existe un cargador independiente de Fase 7. Crear ese módulo reutilizable es la primera tarea de Fase 8.
 
 Para repasar el ejercicio de backpropagation de la Fase 2:
 
@@ -102,7 +103,7 @@ python src/fase3/07_matrices_cpu_vs_gpu.py
 
 ## Avance y punto para retomar
 
-La fecha de corte del avance es el **27 de septiembre de 2026**.
+La fecha de corte del avance es el **1 de octubre de 2026**.
 
 | Fase | Estado registrado | Alcance |
 | --- | --- | --- |
@@ -113,7 +114,8 @@ La fecha de corte del avance es el **27 de septiembre de 2026**.
 | 4. Tokenización y embeddings | Completada | Texto e IDs, embeddings, similitud coseno y modelos de siguiente token con contextos de uno y dos tokens. |
 | 5. Attention | Completada | Q/K/V, escalado, máscara causal, proyecciones entrenables y multi-head attention. |
 | 6. Transformer | Completada | Diez ejercicios: bloque Transformer, posiciones, apilado, entrenamiento, generación y persistencia de MiniGPT. |
-| 7. Entrenar MiniAI | Pendiente; siguiente fase | Corpus más amplio, entrenamiento y validación, lotes, métricas y seguimiento de generaciones. |
+| 7. Entrenar MiniAI | Completada | Diez ejercicios: corpus ampliado, train/validation, batches, regularización, early stopping, BOS/EOS, sampling y checkpoint final. |
+| 8. Servicio | Pendiente; siguiente fase | Separar carga e inferencia y exponer el modelo mediante una API. |
 
 ### Avance de la Fase 1
 
@@ -224,7 +226,7 @@ La diferencia se nota en matrices grandes porque la GPU puede ejecutar muchas mu
 
 ### Punto para retomar
 
-La siguiente fase es la [Fase 7 del plan](01_Plan_de_Trabajo.md#fase-7-entrenar-miniai): ampliar el entrenamiento y evaluar MiniAI.
+La siguiente fase es la [Fase 8 del plan](01_Plan_de_Trabajo.md#fase-8-convertir-miniai-en-servicio): separar la inferencia y exponer MiniAI como servicio.
 
 Partir del MiniGPT y el checkpoint de `src/fase6/09_checkpoint_completo.py` y `src/fase6/10_cargar_checkpoint.py`. Preparar un corpus más amplio, separar entrenamiento y validación, registrar pérdidas y generaciones, y conservar el estado del optimizador para reanudar el entrenamiento.
 
@@ -704,7 +706,157 @@ Las rutas de los `.pth` son relativas al **directorio de ejecución**, no al de 
 - No se registraron nuevas mediciones de tiempo, VRAM ni rendimiento comparado entre CPU y GPU.
 - No hay temperatura de muestreo, caché de atención ni estado de entrenamiento completo en el checkpoint.
 
-La Fase 6 queda cerrada: MiniGPT recibe tokens, se entrena, genera, guarda su aprendizaje y lo recupera. El siguiente paso es la [Fase 7](01_Plan_de_Trabajo.md#fase-7-entrenar-miniai), ampliando el corpus y evaluando el modelo con datos de validación.
+La Fase 6 queda cerrada: MiniGPT recibe tokens, se entrena, genera, guarda su aprendizaje y lo recupera. La Fase 7 retomó este modelo para ampliar el corpus y evaluar la generalización con datos de validación.
+
+---
+
+## Fase 7: Entrenamiento, generalización y generación
+
+La Fase 7 está completada con diez ejercicios en `src/fase7`. El objetivo fue pasar de memorizar una secuencia a entrenar sobre múltiples oraciones, medir el desempeño en datos separados, controlar el overfitting y explorar cómo la decodificación cambia las generaciones.
+
+### Progresión de los ejercicios
+
+| Archivo | Aporte principal |
+| --- | --- |
+| [01_preparar_dataset.py](../../src/fase7/01_preparar_dataset.py) | Tokeniza el primer corpus, construye el vocabulario y realiza una separación inicial 80/20. |
+| [02_crear_batches.py](../../src/fase7/02_crear_batches.py) | Convierte los IDs en ventanas de contexto y objetivos desplazados. |
+| [03_entrenar_con_batches.py](../../src/fase7/03_entrenar_con_batches.py) | Introduce `TensorDataset`, `DataLoader`, mini-batches y soporte batch en attention. |
+| [04_mas_datos.py](../../src/fase7/04_mas_datos.py) | Amplía el corpus y permite observar la divergencia entre train y validation. |
+| [05_entrenamiento_regularizado.py](../../src/fase7/05_entrenamiento_regularizado.py) | Añade dropout, AdamW, weight decay, early stopping y restauración del mejor modelo. |
+| [06_probar_generacion.py](../../src/fase7/06_probar_generacion.py) | Prueba generaciones desde varios prompts. |
+| [07_tokens_especiales.py](../../src/fase7/07_tokens_especiales.py) | Añade BOS/EOS y detiene la generación al producir EOS. |
+| [08_sampling_temperature_topk.py](../../src/fase7/08_sampling_temperature_topk.py) | Sustituye argmax por sampling y experimenta con temperature y top-k. |
+| [09_top_p_sampling.py](../../src/fase7/09_top_p_sampling.py) | Añade nucleus sampling y compara top-p 0.70, 0.90 y 0.98. |
+| [10_checkpoint_fase7.py](../../src/fase7/10_checkpoint_fase7.py) | Guarda el mejor modelo y los metadatos necesarios para reconstruir inferencia. |
+
+### Dataset, validación y mini-batches
+
+El script final define 30 oraciones sobre perros, gatos, una niña y un niño. Se reservan seis oraciones completas para validation y las 24 restantes se usan para train. Después se añaden `<BOS>` y `<EOS>` y se generan ejemplos de siguiente token.
+
+Cada entrada tiene seis IDs. Los contextos cortos se rellenan por la izquierda con BOS y el objetivo es el token inmediatamente siguiente. Los `DataLoader` usan `batch_size=8`; train mezcla los ejemplos y validation conserva su orden.
+
+```text
+Frase:     <BOS> el perro corre por el parque <EOS>
+Contexto:  <BOS> <BOS> <BOS> el perro corre
+Objetivo:  por
+```
+
+La separación permite usar train para actualizar parámetros y validation únicamente para medir. El vocabulario se construye con train y validation juntos, de modo que la evaluación estudia nuevas combinaciones dentro de un vocabulario conocido; no mide el manejo de palabras desconocidas.
+
+### Soporte batch y arquitectura final
+
+La arquitectura pasó de secuencias `[seq_len, embedding_dim]` a tensores `[batch, seq_len, embedding_dim]`. En attention, `K.transpose(-2, -1)` transpone las dos últimas dimensiones sin perder el eje de batch.
+
+| Elemento | Configuración final |
+| --- | --- |
+| Contexto máximo | 6 tokens |
+| Dimensión del embedding | 16 |
+| Cabezas de atención | 4 |
+| Bloques Transformer | 2 |
+| Dropout | 0.20 |
+| Batch size | 8 |
+| Pérdida | CrossEntropyLoss |
+| Optimizador | AdamW |
+| Learning rate | 0.003 |
+| Weight decay | 0.01 |
+| Épocas máximas | 500 |
+| Evaluación | Cada 20 épocas |
+| Patience | 8 evaluaciones sin mejora |
+
+El flujo final es:
+
+```text
+Corpus → train/validation → BOS/EOS → ventanas → mini-batches
+  → embeddings de token y posición → bloques Transformer
+  → logits → CrossEntropyLoss → AdamW
+  → validation → early stopping → mejores pesos
+```
+
+### Overfitting, regularización y early stopping
+
+Un experimento inicial produjo aproximadamente train loss `0.205` y validation loss `6.39`. La pérdida de entrenamiento continuó bajando mientras validation empeoraba, lo que mostró que el modelo memorizaba los ejemplos de train sin mejorar su capacidad para las frases reservadas.
+
+Se añadieron dropout de `0.20`, AdamW con weight decay de `0.01` y early stopping. Cada vez que validation mejora, el script copia el `state_dict`; si pasan ocho evaluaciones sin mejora, detiene el entrenamiento. Al finalizar restaura esos mejores pesos en vez de conservar el estado de la última época.
+
+Una prueba intermedia regularizada obtuvo aproximadamente train loss `0.66` y validation loss `1.56`. El train loss mayor acompañado de un validation loss mucho menor confirma la idea central de esta fase: minimizar train loss por sí solo no garantiza generalización.
+
+La última ejecución reportada del script 10 obtuvo:
+
+```text
+Mejor Validation Loss: 1.0344474554061889
+```
+
+El valor depende de la inicialización, del orden aleatorio de batches y del muestreo; los scripts no fijan una semilla global. La cifra registra una ejecución concreta, no un resultado determinista.
+
+### BOS, EOS y generación
+
+`<BOS>` marca el inicio y también sirve de relleno para contextos cortos. `<EOS>` marca el final; durante generación, producir su ID detiene el bucle antes de alcanzar `max_tokens`. Esto permite aprender dónde termina una frase en lugar de depender únicamente de una longitud fija.
+
+Los prompts probados incluyen `el perro`, `el gato`, `la niña` y `el niño`. Entre las salidas compartidas aparecen:
+
+```text
+el perro mira por la ventana
+el perro juega con el niño
+el perro duerme en la casa
+el perro juega con el gato
+el perro come en la cocina
+el perro come su comida
+```
+
+También se observaron `el perro duerme en la pelota` y `el perro juega con el perro`. Estas salidas muestran el límite del corpus y del modelo: puede recombinar patrones aprendidos, pero no posee conocimiento suficiente para juzgar todas las combinaciones.
+
+### Argmax, sampling, temperature, top-k y top-p
+
+Argmax elige siempre el token con mayor puntuación. `torch.multinomial` muestrea desde la distribución y permite continuaciones diferentes para el mismo prompt.
+
+El pipeline implementado es:
+
+```text
+logits → temperature → top-k opcional → top-p opcional
+  → softmax → multinomial → siguiente token
+```
+
+Temperature baja concentra la distribución y suele producir resultados más conservadores; una temperature alta la aplana y aumenta tanto la variedad como el riesgo de errores. Top-k limita la selección a un número fijo de candidatos. Top-p conserva una cantidad variable de tokens hasta cubrir aproximadamente una masa acumulada determinada.
+
+Se probaron `top_p=0.70`, `0.90` y `0.98`. Los valores bajos fueron más conservadores y los altos permitieron más variedad y más combinaciones débiles. Estas opciones pertenecen a la decodificación: cambian cómo se selecciona la salida, no los parámetros ni lo que el modelo aprendió durante el entrenamiento.
+
+La implementación actual marca para eliminación los tokens cuya suma acumulada es mayor que `top_p` y conserva siempre el primero. A diferencia del algoritmo habitual, no desplaza la máscara para conservar el primer token que cruza el umbral. Por ello puede retener menos masa de probabilidad que la solicitada; es una mejora técnica posible para la siguiente refactorización.
+
+### Checkpoint final
+
+El script 10 creó `miniai_fase7_checkpoint.pth` en la raíz del proyecto porque se ejecutó desde allí. Los archivos `.pth` están excluidos por `.gitignore`.
+
+| Clave | Contenido |
+| --- | --- |
+| `model_state_dict` | Pesos correspondientes al mejor validation loss. |
+| `config` | Embedding 16, cuatro cabezas, dos bloques, contexto 6 y dropout 0.20. |
+| `training` | Nombre del optimizador, learning rate, weight decay y mejor validation loss. |
+| `generation` | Temperature 1.0, top-k desactivado y top-p 0.90. |
+| `vocabulario` | Tokens en el orden que define sus IDs. |
+| `special_tokens` | Valores de BOS y EOS. |
+
+El checkpoint conserva lo necesario para reconstruir el modelo para inferencia junto con el código de la arquitectura. La clave `training` guarda metadatos, pero no `optimizer.state_dict()`, época, contador de early stopping ni estados aleatorios. Por eso no permite reanudar exactamente el entrenamiento.
+
+### Comandos para repetir la fase
+
+Desde la raíz del proyecto y con `.venv` activo:
+
+```bash
+python src/fase7/01_preparar_dataset.py
+python src/fase7/02_crear_batches.py
+python src/fase7/03_entrenar_con_batches.py
+python src/fase7/04_mas_datos.py
+python src/fase7/05_entrenamiento_regularizado.py
+python src/fase7/06_probar_generacion.py
+python src/fase7/07_tokens_especiales.py
+python src/fase7/08_sampling_temperature_topk.py
+python src/fase7/09_top_p_sampling.py
+python src/fase7/10_checkpoint_fase7.py
+```
+
+Los scripts 03–10 entrenan modelos nuevos de forma independiente; no continúan automáticamente desde el resultado anterior. El script 10 sobrescribe `miniai_fase7_checkpoint.pth`. No se registraron mediciones nuevas de tiempo, temperatura del hardware ni uso de VRAM.
+
+La Fase 7 queda cerrada. La siguiente tarea es la [Fase 8](01_Plan_de_Trabajo.md#fase-8-convertir-miniai-en-servicio): extraer la arquitectura y la inferencia a módulos reutilizables, cargar el checkpoint sin reentrenar y ofrecer generación mediante una API.
 
 ---
 
@@ -796,17 +948,28 @@ MiniAI/
 │   │   ├── 05_causal_attention.py
 │   │   ├── 06_attention_aprendible.py
 │   │   └── 07_multi_head_attention.py
-│   └── fase6/
-│       ├── 01_bloque_transformer.py
-│       ├── 02_positional_embeddings.py
-│       ├── 03_transformer_con_posicion.py
-│       ├── 04_transformer_apilado.py
-│       ├── 05_salida_vocabulario.py
-│       ├── 06_entrenar_minigpt.py
-│       ├── 07_generar_texto.py
-│       ├── 08_cargar_modelo.py
-│       ├── 09_checkpoint_completo.py
-│       └── 10_cargar_checkpoint.py
+│   ├── fase6/
+│   │   ├── 01_bloque_transformer.py
+│   │   ├── 02_positional_embeddings.py
+│   │   ├── 03_transformer_con_posicion.py
+│   │   ├── 04_transformer_apilado.py
+│   │   ├── 05_salida_vocabulario.py
+│   │   ├── 06_entrenar_minigpt.py
+│   │   ├── 07_generar_texto.py
+│   │   ├── 08_cargar_modelo.py
+│   │   ├── 09_checkpoint_completo.py
+│   │   └── 10_cargar_checkpoint.py
+│   └── fase7/
+│       ├── 01_preparar_dataset.py
+│       ├── 02_crear_batches.py
+│       ├── 03_entrenar_con_batches.py
+│       ├── 04_mas_datos.py
+│       ├── 05_entrenamiento_regularizado.py
+│       ├── 06_probar_generacion.py
+│       ├── 07_tokens_especiales.py
+│       ├── 08_sampling_temperature_topk.py
+│       ├── 09_top_p_sampling.py
+│       └── 10_checkpoint_fase7.py
 ├── .venv/
 ├── .gitignore
 └── README.md

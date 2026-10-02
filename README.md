@@ -16,7 +16,7 @@ El proyecto avanza desde la matemática fundamental hasta una arquitectura capaz
 
 ## Estado actual
 
-Avance registrado al 27 de septiembre de 2026, según la memoria técnica y la confirmación de ejecución del autor:
+Avance registrado al 1 de octubre de 2026, según la memoria técnica, los scripts del repositorio y los resultados compartidos por el autor:
 
 - **Fase 0 - Laboratorio:** completada según las pruebas previas del entorno.
 - **Fase 1 - Neurona artificial:** implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión.
@@ -25,7 +25,8 @@ Avance registrado al 27 de septiembre de 2026, según la memoria técnica y la c
 - **Fase 4 - Tokenización, embeddings y predicción:** completada con siete ejercicios, desde texto e IDs hasta modelos de siguiente token con contextos de uno y dos tokens.
 - **Fase 5 - Attention:** completada con siete ejercicios, desde atención para un token hasta Multi-Head Causal Self-Attention con dos cabezas y proyección de salida.
 - **Fase 6 - Transformer:** completada con diez ejercicios: bloques con atención causal, embeddings posicionales, entrenamiento de MiniGPT, generación autoregresiva y recuperación desde un checkpoint.
-- **Siguiente paso:** comenzar la Fase 7 con un corpus más amplio, separación de entrenamiento y validación, y seguimiento de pérdida y generaciones.
+- **Fase 7 - Entrenar MiniAI:** completada con diez ejercicios: corpus de múltiples oraciones, train/validation, mini-batches, atención con dimensión batch, regularización, early stopping, BOS/EOS y generación mediante temperature, top-k y top-p.
+- **Siguiente paso:** comenzar la Fase 8 y separar la inferencia del entrenamiento para exponer el modelo mediante una API.
 
 ## Documentación
 
@@ -105,17 +106,28 @@ MiniAI/
 |   |   |-- 05_causal_attention.py
 |   |   |-- 06_attention_aprendible.py
 |   |   `-- 07_multi_head_attention.py
-|   `-- fase6/
-|       |-- 01_bloque_transformer.py
-|       |-- 02_positional_embeddings.py
-|       |-- 03_transformer_con_posicion.py
-|       |-- 04_transformer_apilado.py
-|       |-- 05_salida_vocabulario.py
-|       |-- 06_entrenar_minigpt.py
-|       |-- 07_generar_texto.py
-|       |-- 08_cargar_modelo.py
-|       |-- 09_checkpoint_completo.py
-|       `-- 10_cargar_checkpoint.py
+|   |-- fase6/
+|   |   |-- 01_bloque_transformer.py
+|   |   |-- 02_positional_embeddings.py
+|   |   |-- 03_transformer_con_posicion.py
+|   |   |-- 04_transformer_apilado.py
+|   |   |-- 05_salida_vocabulario.py
+|   |   |-- 06_entrenar_minigpt.py
+|   |   |-- 07_generar_texto.py
+|   |   |-- 08_cargar_modelo.py
+|   |   |-- 09_checkpoint_completo.py
+|   |   `-- 10_cargar_checkpoint.py
+|   `-- fase7/
+|       |-- 01_preparar_dataset.py
+|       |-- 02_crear_batches.py
+|       |-- 03_entrenar_con_batches.py
+|       |-- 04_mas_datos.py
+|       |-- 05_entrenamiento_regularizado.py
+|       |-- 06_probar_generacion.py
+|       |-- 07_tokens_especiales.py
+|       |-- 08_sampling_temperature_topk.py
+|       |-- 09_top_p_sampling.py
+|       `-- 10_checkpoint_fase7.py
 |-- .venv/                    # Entorno virtual local, no versionar
 |-- .gitignore
 `-- README.md
@@ -269,6 +281,33 @@ el perro come el gato duerme
 
 La generación comienza con `el` y añade cinco tokens mediante `argmax`. El experimento demuestra aprendizaje y persistencia sobre un corpus de seis tokens; todavía no demuestra comprensión del español ni generalización a textos nuevos. Los resultados compartidos, las dimensiones y los límites están en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-6-transformer).
 
+## Ejecutar la fase 7
+
+Desde la raíz del repositorio, con el entorno virtual activo:
+
+```bash
+python src/fase7/01_preparar_dataset.py
+python src/fase7/02_crear_batches.py
+python src/fase7/03_entrenar_con_batches.py
+python src/fase7/04_mas_datos.py
+python src/fase7/05_entrenamiento_regularizado.py
+python src/fase7/06_probar_generacion.py
+python src/fase7/07_tokens_especiales.py
+python src/fase7/08_sampling_temperature_topk.py
+python src/fase7/09_top_p_sampling.py
+python src/fase7/10_checkpoint_fase7.py
+```
+
+La fase amplía el corpus a 30 oraciones y reserva seis para validación. El modelo trabaja con entradas `[batch, seq_len, embedding_dim]`, ventanas de seis tokens y mini-batches de ocho ejemplos. La configuración final usa `embedding_dim=16`, cuatro cabezas, dos bloques, dropout de `0.20` y AdamW con `lr=0.003` y `weight_decay=0.01`.
+
+El primer experimento mostró overfitting: la pérdida de entrenamiento bajó aproximadamente a `0.205`, mientras validation subió alrededor de `6.39`. Dropout, weight decay y early stopping mejoraron la generalización. La última ejecución reportada obtuvo un mejor validation loss de `1.0344474554061889`.
+
+La generación incorpora `<BOS>` y `<EOS>`, sampling, temperature, top-k y top-p. Con el prompt `el perro` produjo frases plausibles como `el perro mira por la ventana` y también errores como `el perro duerme en la pelota`, coherentes con el tamaño reducido del corpus.
+
+El script 10 guarda `miniai_fase7_checkpoint.pth` en el directorio desde el que se ejecuta. El archivo contiene pesos, configuración del modelo, vocabulario, tokens especiales, hiperparámetros principales y configuración de generación. No incluye `optimizer.state_dict()`, época ni estados aleatorios, por lo que permite reconstruir inferencia junto con el código, pero no reanudar exactamente el entrenamiento.
+
+El detalle de los experimentos y de los diez scripts está en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-7-entrenamiento-generalización-y-generación).
+
 ## Roadmap
 
 | Fase | Tema | Estado |
@@ -280,7 +319,7 @@ La generación comienza con `el` y añade cinco tokens mediante `argmax`. El exp
 | 4 | Tokenización, embeddings y predicción de siguiente token | Completada |
 | 5 | Self-attention causal y multi-head attention | Completada |
 | 6 | Construir un Transformer pequeño | Completada |
-| 7 | Entrenar MiniAI | Pendiente |
+| 7 | Entrenar MiniAI | Completada |
 | 8 | Convertir MiniAI en servicio | Pendiente |
 | 9 | RAG y tools | Pendiente |
 | 10 | MCP y arquitectura distribuida | Pendiente |

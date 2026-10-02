@@ -4,7 +4,7 @@ Este documento reúne los conceptos aprendidos durante la construcción de MiniA
 
 La intención no es memorizar todas las definiciones, sino tener una referencia rápida que podamos ampliar conforme avance el proyecto.
 
-**Última ampliación:** 27 de septiembre de 2026, [conceptos de la Fase 6](#fase-6-transformer-entrenamiento-y-persistencia). También se conservan los conceptos de [Fase 4](#fase-4-del-texto-a-la-predicción) y [Fase 5](#fase-5-attention-y-representaciones-contextualizadas). Los ejercicios, resultados y límites de MiniGPT están en la [memoria técnica](02_Memoria_Tecnica.md#fase-6-transformer).
+**Última ampliación:** 1 de octubre de 2026, [conceptos de la Fase 7](#fase-7-generalización-regularización-y-decodificación). También se conservan los conceptos de [Fase 4](#fase-4-del-texto-a-la-predicción), [Fase 5](#fase-5-attention-y-representaciones-contextualizadas) y [Fase 6](#fase-6-transformer-entrenamiento-y-persistencia). Los ejercicios, resultados y límites actuales están en la [memoria técnica](02_Memoria_Tecnica.md#fase-7-entrenamiento-generalización-y-generación).
 
 ---
 
@@ -1263,4 +1263,147 @@ Reproducir `el perro come el gato duerme` después de entrenar y después de car
 
 La pérdida reportada, aproximadamente `0.000035`, se mide sobre el mismo corpus diminuto usado para entrenar. No mide el desempeño con frases nuevas. Distinguir los dos usos de `el` es compatible con aprovechar posición y contexto; no demuestra comprensión del español.
 
-La [Fase 7](01_Plan_de_Trabajo.md#fase-7-entrenar-miniai) continuará con más datos, validación y seguimiento del entrenamiento para estudiar ese límite.
+La [Fase 7](01_Plan_de_Trabajo.md#fase-7-entrenar-miniai) continuó con más datos, validación y seguimiento del entrenamiento para estudiar ese límite.
+
+---
+
+## Fase 7: Generalización, regularización y decodificación
+
+Esta fase separa dos preguntas que antes estaban mezcladas:
+
+```text
+Entrenamiento: ¿qué probabilidades aprende el modelo?
+Decodificación: ¿cómo elegimos texto a partir de esas probabilidades?
+```
+
+## Train y validation
+
+El conjunto de train se usa para calcular gradientes y actualizar parámetros. El conjunto de validation se consulta sin `backward()` ni `optimizer.step()`; permite estimar cómo se comporta el modelo en ejemplos que no usó para ajustar sus pesos.
+
+Comparar ambas pérdidas ayuda a distinguir aprendizaje y memorización. Una pérdida baja en train no basta para afirmar que el modelo generaliza.
+
+---
+
+## Batch y mini-batch
+
+Un batch agrupa varios ejemplos para procesarlos en una misma operación. Un mini-batch es un grupo menor que el dataset completo. En Fase 7, `batch_size=8` produce entradas con forma:
+
+```text
+[batch, seq_len] → embeddings → [batch, seq_len, embedding_dim]
+```
+
+`DataLoader` organiza esos grupos y puede mezclar el orden de train entre épocas.
+
+---
+
+## Generalización y overfitting
+
+Generalizar significa rendir razonablemente en datos no usados para actualizar los pesos. Overfitting ocurre cuando el modelo se ajusta demasiado a train y empeora fuera de él.
+
+Una señal típica es:
+
+```text
+train loss baja
+validation loss sube
+```
+
+El experimento de Fase 7 observó esta divergencia antes de añadir regularización. El validation loss mide el conjunto reservado del experimento; no demuestra comprensión general del idioma.
+
+---
+
+## Dropout
+
+`nn.Dropout(p)` pone aleatoriamente parte de las activaciones en cero durante entrenamiento. Esto reduce la dependencia de rutas concretas. Con `modelo.eval()`, dropout deja de aplicar ese ruido y se usan todas las activaciones.
+
+`p=0.20` significa una probabilidad del 20% de anular cada activación afectada durante entrenamiento; no elimina permanentemente neuronas ni parámetros.
+
+---
+
+## AdamW y weight decay
+
+AdamW es un optimizador adaptativo que separa el weight decay de la actualización basada en el gradiente. En esta fase se utilizó:
+
+```python
+torch.optim.AdamW(
+    modelo.parameters(),
+    lr=0.003,
+    weight_decay=0.01
+)
+```
+
+Weight decay penaliza parámetros grandes y actúa como regularización. Su valor no representa un porcentaje directo de neuronas eliminadas.
+
+---
+
+## Early stopping y mejor modelo
+
+Early stopping detiene el entrenamiento cuando validation deja de mejorar durante un número definido de evaluaciones, llamado `patience`.
+
+El script copia el `state_dict` cada vez que obtiene un validation loss menor. Al terminar restaura esa copia. Así, «mejor modelo» significa el estado con mejor métrica de validation observada, no los pesos de la última época.
+
+---
+
+## BOS y EOS
+
+`<BOS>` (*Beginning Of Sequence*) marca el inicio de una secuencia. En los ejercicios también rellena por la izquierda los contextos cortos.
+
+`<EOS>` (*End Of Sequence*) representa el final. Durante generación, si el modelo selecciona EOS, el bucle se detiene. Ambos son tokens del vocabulario y tienen IDs y embeddings aprendidos.
+
+---
+
+## Sampling
+
+Sampling elige aleatoriamente un token de acuerdo con su distribución de probabilidad:
+
+```python
+siguiente_id = torch.multinomial(probabilidades, num_samples=1)
+```
+
+A diferencia de argmax, puede producir distintas continuaciones para el mismo prompt. Los tokens más probables siguen teniendo mayor oportunidad de ser elegidos.
+
+---
+
+## Temperature
+
+Temperature divide los logits antes de softmax:
+
+```python
+logits_ajustados = logits / temperature
+```
+
+Una temperature menor que 1 concentra la distribución y suele volver la generación más conservadora. Una mayor que 1 la aplana, aumenta la diversidad y también el riesgo de seleccionar opciones débiles. Debe ser mayor que cero.
+
+---
+
+## Top-k
+
+Top-k conserva una cantidad fija de los tokens con logits más altos y descarta los demás antes del muestreo. Con `top_k=5`, solo cinco candidatos pueden ser elegidos, aunque sus probabilidades sean muy diferentes.
+
+---
+
+## Top-p o nucleus sampling
+
+Top-p ordena candidatos por probabilidad y, en su forma habitual, conserva el conjunto más pequeño que cubre aproximadamente una masa acumulada elegida. La cantidad de candidatos cambia según la distribución.
+
+```text
+top-k → número fijo de candidatos
+top-p → masa de probabilidad y número variable
+```
+
+Un top-p alto suele admitir más variedad. En todos los casos se conserva al menos el candidato principal para evitar una distribución vacía. La implementación de Fase 7 elimina directamente las posiciones cuya suma ya supera el umbral; como no conserva el primer token que lo cruza, puede retener menos masa que la variante estándar.
+
+---
+
+## Decodificación
+
+Decodificar es convertir los logits del modelo en una secuencia concreta. Argmax, sampling, temperature, top-k y top-p son decisiones de decodificación.
+
+Cambiar estas opciones no vuelve a entrenar el modelo ni añade conocimiento. Modifica qué continuaciones se permiten y cómo se seleccionan a partir de las probabilidades ya aprendidas.
+
+---
+
+## Checkpoint de Fase 7
+
+El checkpoint final reúne pesos, arquitectura, vocabulario, tokens especiales, métricas e hiperparámetros de generación. Esto permite reconstruir el modelo para inferencia junto con el código.
+
+Guardar el nombre `AdamW`, el learning rate y el weight decay no equivale a guardar `optimizer.state_dict()`. Para reanudar exactamente el entrenamiento también harían falta el estado del optimizador, la época o paso y los estados aleatorios pertinentes.
