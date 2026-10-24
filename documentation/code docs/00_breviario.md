@@ -4,7 +4,7 @@ Este documento reúne los conceptos aprendidos durante la construcción de MiniA
 
 La intención no es memorizar todas las definiciones, sino tener una referencia rápida que podamos ampliar conforme avance el proyecto.
 
-**Última ampliación:** 24 de octubre de 2026, [conceptos de la Fase 8](#conceptos-de-servicio-de-fase-8). También se conservan los conceptos de [Fase 4](#fase-4-del-texto-a-la-predicción), [Fase 5](#fase-5-attention-y-representaciones-contextualizadas), [Fase 6](#fase-6-transformer-entrenamiento-y-persistencia) y [Fase 7](#fase-7-generalización-regularización-y-decodificación). Los ejercicios, resultados y límites actuales están en la [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular).
+**Última ampliación:** 24 de octubre de 2026, [conceptos de la Fase 8](#conceptos-de-servicio-de-fase-8). También se conservan los conceptos de [Fase 4](#fase-4-del-texto-a-la-predicción), [Fase 5](#fase-5-attention-y-representaciones-contextualizadas), [Fase 6](#fase-6-transformer-entrenamiento-y-persistencia) y [Fase 7](#fase-7-generalización-regularización-y-decodificación). Los ejercicios, resultados y límites actuales están en la [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-interfaz-e-inferencia-modular).
 
 ---
 
@@ -1412,7 +1412,7 @@ Guardar el nombre `AdamW`, el learning rate y el weight decay no equivale a guar
 
 ## Conceptos de servicio de Fase 8
 
-La [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular) describe cómo se aplican estos conceptos en MiniAI.
+La [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-interfaz-e-inferencia-modular) describe cómo se aplican estos conceptos en MiniAI.
 
 **Compatibilidad de `state_dict`:** para cargar un checkpoint, la arquitectura debe esperar las mismas claves y dimensiones que están guardadas. Dos implementaciones matemáticamente equivalentes pueden tener nombres de parámetros incompatibles.
 
@@ -1423,6 +1423,8 @@ La [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular
 **`torch.inference_mode()`:** ejecuta operaciones que no necesitan autograd sin construir el grafo de gradientes, evitando trabajo innecesario en generación.
 
 **API HTTP:** interfaz de solicitudes y respuestas que permite invocar operaciones de un servicio desde un cliente. En esta fase, `GET /health` informa el estado del servidor y `POST /chat` solicita generación.
+
+**API REST:** estilo de diseño de servicios que organiza operaciones alrededor de recursos y métodos HTTP. MiniAI expone rutas HTTP sencillas para salud e inferencia; no implica que el modelo sea un servicio de producción.
 
 **Endpoint:** combinación de una ruta y un método HTTP que representa una operación de la API, por ejemplo `POST /chat`.
 
@@ -1441,3 +1443,17 @@ La [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular
 **HTTP 422 y HTTP 500:** 422 indica que la solicitud no supera validación o una regla de entrada de la aplicación; 500 indica un fallo interno inesperado del servidor.
 
 **Separación de responsabilidades:** mantener arquitectura, carga del modelo, generación, API y presentación en módulos distintos permite reutilizar la inferencia sin mezclarla con el entrenamiento ni con el transporte HTTP.
+
+**DOM:** representación en forma de árbol que el navegador construye a partir del HTML y que JavaScript puede consultar y actualizar para presentar mensajes, estados y resultados.
+
+**Fetch API:** interfaz del navegador para enviar solicitudes HTTP desde JavaScript y procesar respuestas, por ejemplo al invocar `/health` y `/chat`.
+
+**JavaScript modular:** organización del código en módulos con responsabilidades separadas; MiniAI Console divide la coordinación, las llamadas HTTP y la actualización visual.
+
+**Diseño responsive:** adaptación de la distribución y los controles de una página a distintos tamaños de pantalla mediante estilos CSS.
+
+**UX (experiencia de usuario):** decisiones de interacción y presentación que ayudan a entender el estado y el resultado de la aplicación, incluyendo indicadores de carga, errores, latencia y controles de generación.
+
+**Prueba de integración HTTP:** prueba que envía solicitudes al servicio ejecutándose y verifica tanto las respuestas válidas como el comportamiento frente a entradas rechazadas. La prueba de Fase 8 revisa salud, generación, tokens desconocidos y parámetros inválidos.
+
+**Acceso en LAN:** acceso a un servicio dentro de la red local desde otro dispositivo. Escuchar en `0.0.0.0` permite que el servidor atienda en sus interfaces de red; no proporciona autenticación ni cifra el tráfico.

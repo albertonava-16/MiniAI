@@ -16,7 +16,7 @@ El proyecto avanza desde la matemática fundamental hasta una arquitectura capaz
 
 ## Estado actual
 
-Avance registrado al 24 de octubre de 2026, según la memoria técnica, los archivos del repositorio y los resultados compartidos por el autor:
+Avance registrado al 24 de octubre de 2026, según la memoria técnica, los archivos del repositorio y las pruebas ejecutadas:
 
 - **Fase 0 - Laboratorio:** completada según las pruebas previas del entorno.
 - **Fase 1 - Neurona artificial:** implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión.
@@ -26,7 +26,8 @@ Avance registrado al 24 de octubre de 2026, según la memoria técnica, los arch
 - **Fase 5 - Attention:** completada con siete ejercicios, desde atención para un token hasta Multi-Head Causal Self-Attention con dos cabezas y proyección de salida.
 - **Fase 6 - Transformer:** completada con diez ejercicios: bloques con atención causal, embeddings posicionales, entrenamiento de MiniGPT, generación autoregresiva y recuperación desde un checkpoint.
 - **Fase 7 - Entrenar MiniAI:** completada con diez ejercicios: corpus de múltiples oraciones, train/validation, mini-batches, atención con dimensión batch, regularización, early stopping, BOS/EOS y generación mediante temperature, top-k y top-p.
-- **Fase 8 - Servicio:** en progreso. La carga del checkpoint, la generación modular y el backend FastAPI están implementados. La interfaz web y el acceso desde otro dispositivo en la red local siguen pendientes.
+- **Fase 8 - Servicio:** completada. MiniAI cuenta con inferencia modular, API FastAPI, la interfaz web MiniAI Console, pruebas HTTP automatizadas y acceso confirmado desde otro dispositivo de la red local.
+- **Siguiente objetivo:** Fase 9 — RAG y herramientas: recuperar información de documentos externos e incorporar contexto al modelo, además de aprender a ejecutar herramientas de forma controlada.
 
 ## Documentación
 
@@ -40,25 +41,29 @@ La memoria técnica y el plan se convirtieron de texto plano a Markdown. Las pr�
 
 ## Arquitectura actual
 
-La aplicación modular separa el backend HTTP de la biblioteca de inferencia. El servidor carga el checkpoint una vez al iniciar y reutiliza el modelo para las solicitudes. La interfaz web todavía no está implementada.
+La aplicación separa el frontend, el backend HTTP y la biblioteca de inferencia. FastAPI sirve MiniAI Console, carga el checkpoint una vez al iniciar y reutiliza el modelo para las solicitudes.
 
 ```text
-Cliente HTTP / Swagger
-        |
-        v
-backend/main.py
-        |
-        v
-backend/routes/chat.py
-        |
-        v
-miniai/generacion.py
-        |
-        v
-MiniGPT + PyTorch / CUDA o CPU
+Navegador: MiniAI Console             Cliente HTTP / Swagger
+             |                                  |
+             +------------------+---------------+
+                                v
+                       backend/main.py
+                        /            \
+          frontend estático         API FastAPI
+          / y /assets               /health, /chat
+                                      |
+                                      v
+                           backend/routes/chat.py
+                                      |
+                                      v
+                            miniai/generacion.py
+                                      |
+                                      v
+                          MiniGPT + PyTorch / CUDA o CPU
 ```
 
-La carga inicial usa `miniai/inferencia.py` y `models/miniai_fase7_checkpoint.pth`. RAG, tools y MCP son trabajo de fases posteriores:
+La carga inicial usa `miniai/inferencia.py` y `models/miniai_fase7_checkpoint.pth`. La Fase 9 abordará RAG y herramientas; MCP y la arquitectura distribuida se mantienen para la Fase 10:
 
 ```text
 MiniAI
@@ -74,8 +79,8 @@ MiniAI/
 |-- backend/                  # Aplicación FastAPI, rutas, esquemas y configuración
 |-- miniai/                   # Arquitectura, carga de checkpoint y generación
 |-- models/                   # Checkpoint usado por la aplicación modular
-|-- tests/                    # Pruebas de carga y generación
-|-- frontend/                 # Estructura CSS/JS; interfaz aún no implementada
+|-- tests/                    # Pruebas de carga, generación y API HTTP
+|-- frontend/                 # MiniAI Console: HTML, CSS responsive y JavaScript modular
 |-- documentation/            # Plan, memoria técnica y breviario
 |   `-- code docs/
 |       |-- 00_breviario.md
@@ -146,7 +151,7 @@ MiniAI/
 `-- README.md
 ```
 
-Los ejercicios históricos de Fase 8 siguen en `src/fase8/`; la aplicación reutilizable vive en `backend/` y `miniai/`. `frontend/` no tiene todavía una interfaz implementada.
+Los ejercicios históricos de Fase 8 siguen en `src/fase8/`; la aplicación reutilizable vive en `backend/`, `miniai/` y `frontend/`.
 
 ## Requisitos
 
@@ -329,7 +334,7 @@ El script 10 guarda `miniai_fase7_checkpoint.pth` en el directorio desde el que 
 
 El detalle de los experimentos y de los diez scripts está en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-7-entrenamiento-generalización-y-generación).
 
-## Ejecutar el backend de Fase 8
+## Ejecutar MiniAI Console y la API
 
 Desde la raíz del repositorio, con el entorno virtual activo:
 
@@ -343,9 +348,23 @@ Para desarrollo con recarga automática:
 py -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-La documentación interactiva de la API está en <http://127.0.0.1:8000/docs>. Los endpoints implementados son `GET /health` y `POST /chat`. El backend carga el modelo durante el arranque; la primera solicitud no entrena ni vuelve a cargar el checkpoint. El servicio está configurado para `127.0.0.1`, no para exposición en la LAN.
+La documentación interactiva de la API está en <http://127.0.0.1:8000/docs>. Los endpoints implementados son `GET /health` y `POST /chat`. El backend carga el modelo durante el arranque; las solicitudes no vuelven a entrenar ni a cargar el checkpoint. El comando anterior limita el servicio al equipo local; más abajo se indica cómo probarlo en una LAN de confianza.
 
-El detalle de módulos, validaciones, limitaciones y pruebas está en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular).
+El frontend se sirve en <http://127.0.0.1:8000/> desde la misma aplicación FastAPI. Para ejecutar la prueba HTTP automatizada, primero inicia el servidor y luego, en otra terminal:
+
+```bash
+py -m tests.test_api_http
+```
+
+La prueba cubre `/health`, una generación válida, tokens desconocidos y parámetros inválidos. Para probar desde otro dispositivo de una red de confianza, inicia Uvicorn escuchando en la interfaz de red:
+
+```bash
+py -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+El acceso LAN fue confirmado durante la Fase 8. La API no incorpora autenticación: no la expongas a Internet ni a redes no confiables; limita el acceso mediante la configuración de red y firewall.
+
+El detalle de módulos, pruebas, resultados y limitaciones está en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-8-servicio-interfaz-e-inferencia-modular).
 
 ## Roadmap
 
@@ -359,8 +378,8 @@ El detalle de módulos, validaciones, limitaciones y pruebas está en la [memori
 | 5 | Self-attention causal y multi-head attention | Completada |
 | 6 | Construir un Transformer pequeño | Completada |
 | 7 | Entrenar MiniAI | Completada |
-| 8 | Convertir MiniAI en servicio | En progreso |
-| 9 | RAG y tools | Pendiente |
+| 8 | Convertir MiniAI en servicio | Completada |
+| 9 | RAG y herramientas | Siguiente fase |
 | 10 | MCP y arquitectura distribuida | Pendiente |
 | 11 | Consolidación y documentación | Pendiente |
 

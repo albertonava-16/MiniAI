@@ -69,9 +69,28 @@ def chat(datos: ChatRequest, request: Request):
             ) * 1000
 
     except ValueError as error:
+
+        logger.warning(
+            "Solicitud de generación rechazada: %s",
+            error
+        )
+
+        if "Tokens desconocidos" in str(error):
+            mensaje = (
+                "Mi vocabulario todavía es limitado. "
+                "Intenta escribir una frase más sencilla, "
+                "por ejemplo: 'el perro' o 'la niña'."
+            )
+        else:
+            mensaje = (
+                "No pude procesar tu solicitud. "
+                "Revisa el texto y los parámetros "
+                "de generación."
+            )
+
         raise HTTPException(
             status_code=422,
-            detail=str(error)
+            detail=mensaje
         ) from error
 
     except Exception:

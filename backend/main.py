@@ -2,6 +2,9 @@
 # backend/main.py
 
 import logging
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from contextlib import asynccontextmanager
 from threading import Lock
@@ -56,3 +59,24 @@ app = FastAPI(
 )
 
 app.include_router(router)
+
+# ============================================================
+# FRONTEND
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = BASE_DIR / "frontend"
+
+
+app.mount(
+    "/assets",
+    StaticFiles(directory=str(FRONTEND_DIR)),
+    name="assets"
+)
+
+
+@app.get("/", include_in_schema=False)
+def frontend():
+    return FileResponse(
+        FRONTEND_DIR / "index.html"
+    )

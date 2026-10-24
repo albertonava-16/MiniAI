@@ -7,7 +7,7 @@ La intención es avanzar por fases, entender cada componente y registrar resulta
 **Duración estimada total:** 44–60 horas, según la suma de las fases.  
 **Último avance registrado:** 24 de octubre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 8, terminar la interfaz, ampliar pruebas HTTP y definir el acceso LAN.
+**Punto para retomar:** Fase 9, aprender RAG y herramientas.
 
 Documentos relacionados: [memoria técnica](02_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -75,16 +75,18 @@ El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-
 | 5. Attention | Completada: siete ejercicios, máscara causal, proyecciones entrenables y dos cabezas con proyección final. |
 | 6. Transformer | Completada: diez ejercicios, MiniGPT entrenable, generación autoregresiva y persistencia con pesos, configuración y vocabulario. |
 | 7. Entrenar MiniAI | Completada: diez ejercicios con train/validation, batches, regularización, early stopping, BOS/EOS, sampling y checkpoint final. |
-| 8. Servicio | En progreso: carga e inferencia modular y API local implementadas; interfaz web y acceso LAN pendientes. |
-| 9–11 | Pendientes en el registro de avance. |
+| 8. Servicio | Completada: inferencia modular, API FastAPI, MiniAI Console y prueba de acceso por LAN. |
+| 9. RAG y herramientas | Siguiente fase. |
+| 10. MCP y arquitectura distribuida | Pendiente. |
+| 11. Consolidación y documentación | Pendiente. |
 
 Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución. La Fase 5 se cierra con la confirmación del autor, sus resultados de ejemplo y la revisión de los siete scripts de `src/fase5`; sus módulos de atención se ejecutan sin un ciclo de entrenamiento. La Fase 6 se cierra con el contexto y los resultados compartidos por el autor y la revisión de los diez scripts de `src/fase6`. La Fase 7 se cierra con la revisión de sus diez scripts y la última ejecución reportada por el autor; no se volvió a entrenar el modelo durante esta actualización documental.
 
 ### Punto para retomar
 
-Continuar la [Fase 8](#fase-8-convertir-miniai-en-servicio): completar una interfaz web sencilla, ampliar las pruebas HTTP y decidir cuándo habilitar acceso desde la red local. La implementación actual escucha en `127.0.0.1`; no se debe tratar como un servicio expuesto a la LAN.
+Comenzar la [Fase 9](#fase-9-rag-y-herramientas): aprender a recuperar información de documentos externos y a invocar herramientas de forma controlada. La Fase 8 está cerrada; sus límites de seguridad y las mejoras posteriores siguen documentados en la memoria técnica.
 
-La carga modular y el uso de la API se describen en la [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular).
+La aplicación terminada y sus pruebas se describen en la [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-interfaz-e-inferencia-modular).
 
 ---
 
@@ -102,7 +104,7 @@ Los tiempos son estimaciones de dedicación por fase, no horas medidas ni fechas
 | 5 | Self-attention causal y multi-head attention | 5–6 h | Completada |
 | 6 | Transformer | 6–8 h | Completada |
 | 7 | Entrenamiento de MiniAI | 4–6 h | Completada |
-| 8 | API e interfaz | 3–4 h | En progreso |
+| 8 | API e interfaz | 3–4 h | Completada |
 | 9 | RAG y herramientas | 4–5 h | Pendiente |
 | 10 | MCP y arquitectura distribuida | 4–6 h | Pendiente |
 | 11 | Consolidación y documentación | 2–4 h | Pendiente |
@@ -666,13 +668,13 @@ El modelo se entrena con múltiples ejemplos, se evalúa en datos separados, con
 
 MiniAI pasó de memorizar una secuencia a aprender distribuciones sobre un corpus pequeño, medir generalización y generar continuaciones variadas. El checkpoint final conserva lo necesario para reconstruir inferencia junto con el código, pero no guarda `optimizer.state_dict()`, época ni estados aleatorios para reanudar exactamente el entrenamiento.
 
-La [Fase 8](#fase-8-convertir-miniai-en-servicio) separó la carga y la generación del script de entrenamiento y ya ofrece el modelo mediante una API local; quedan pendientes la interfaz y el acceso LAN.
+La [Fase 8](#fase-8-convertir-miniai-en-servicio) separó la carga y la generación del entrenamiento y concluyó con una API, una interfaz web y acceso confirmado por LAN.
 
 ---
 
 ## Fase 8: Convertir MiniAI en servicio
 
-**Estado:** en progreso. El backend de inferencia local está implementado; la interfaz web y el acceso desde otro dispositivo en la LAN siguen pendientes.
+**Estado:** completada.
 **Tiempo estimado:** 3–4 horas.
 
 ### Objetivo
@@ -687,10 +689,12 @@ Exponer el modelo como servicio para usarlo desde otras aplicaciones.
 - [x] Recibir un prompt, aplicar los parámetros de generación y devolver JSON.
 - [x] Validar límites de entrada y devolver errores controlados para tokens desconocidos.
 - [x] Registrar errores y latencia de inferencia.
-- [x] Probar la carga modular y la generación; la validación HTTP local de la Fase 8 fue confirmada por el autor.
-- [ ] Crear una interfaz web sencilla.
-- [ ] Probar y configurar de forma segura el acceso desde otro dispositivo en la red local (`LAN`).
-- [ ] Ampliar las pruebas automatizadas de API y casos límite de top-p.
+- [x] Validar la carga modular y la generación con pruebas independientes.
+- [x] Crear MiniAI Console con controles de sampling, estados, errores e historial.
+- [x] Servir la interfaz desde FastAPI y aplicar estilos responsive.
+- [x] Confirmar el uso de la aplicación desde otro dispositivo en la misma red local.
+- [x] Añadir y ejecutar la prueba HTTP automatizada para salud, generación y errores de entrada.
+- [ ] Mejoras posteriores: pruebas de top-p, concurrencia y carga, refinamiento de UX, observabilidad y seguridad antes de cualquier despliegue externo.
 
 ### Arquitectura conceptual
 
@@ -710,11 +714,11 @@ API, servidor de inferencia (`inference server`), solicitud y respuesta (`reques
 
 ### Criterio de salida
 
-Podemos hablar con MiniAI desde un navegador o un cliente HTTP.
+Podemos usar MiniAI desde su interfaz en un navegador o desde un cliente HTTP, y la aplicación funciona desde otro dispositivo de la red local.
 
 ### Resultado esperado
 
-MiniAI deja de ser un script y se convierte en un servicio.
+MiniAI deja de ser solo un conjunto de scripts educativos y dispone de una aplicación modular con interfaz web y API de inferencia.
 
 ---
 

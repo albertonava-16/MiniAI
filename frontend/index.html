@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="MiniAI Console - Laboratorio de inferencia Transformer">
+
+    <title>MiniAI Console</title>
+
+    <link rel="stylesheet"
+          href="/assets/css/styles.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- BARRA SUPERIOR -->
+    <header class="header">
+
+        <div class="brand">
+            <div class="brand-icon">M</div>
+
+            <div>
+                <h1>MiniAI Console</h1>
+                <p>Transformer Laboratory</p>
+            </div>
+        </div>
+
+        <div class="server-status" id="server-status">
+            <span class="status-dot"></span>
+            <span id="status-text">Sin verificar</span>
+        </div>
+
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="workspace">
+
+        <!-- PANEL DE CONFIGURACIÓN -->
+        <aside class="sidebar">
+
+            <div class="panel-header">
+                <h2>Generación</h2>
+                <p>Configura el sampling</p>
+            </div>
+
+            <div class="control-group">
+                <label for="temperature">
+                    Temperature
+                    <output id="temperature-value">0.7</output>
+                </label>
+
+                <input type="range"
+                       id="temperature"
+                       min="0.1"
+                       max="2"
+                       step="0.1"
+                       value="0.7">
+            </div>
+
+            <div class="control-group">
+                <label for="top-p">
+                    Top-p
+                    <output id="top-p-value">0.9</output>
+                </label>
+
+                <input type="range"
+                       id="top-p"
+                       min="0.1"
+                       max="1"
+                       step="0.05"
+                       value="0.9">
+            </div>
+
+            <div class="control-group">
+                <label for="top-k">Top-k</label>
+
+                <input type="number"
+                       id="top-k"
+                       min="1"
+                       max="26"
+                       value="3">
+            </div>
+
+            <div class="control-group">
+                <label for="max-tokens">Máximo de tokens</label>
+
+                <input type="number"
+                       id="max-tokens"
+                       min="1"
+                       max="64"
+                       value="12">
+            </div>
+
+            <div class="divider"></div>
+
+            <section class="model-info">
+                <h3>Modelo actual</h3>
+
+                <div class="info-row">
+                    <span>Arquitectura</span>
+                    <strong>MiniGPT</strong>
+                </div>
+
+                <div class="info-row">
+                    <span>Parámetros</span>
+                    <strong>7,418</strong>
+                </div>
+
+                <div class="info-row">
+                    <span>Vocabulario</span>
+                    <strong>26 tokens</strong>
+                </div>
+
+                <div class="info-row">
+                    <span>Bloques</span>
+                    <strong>2</strong>
+                </div>
+
+                <div class="info-row">
+                    <span>Dispositivo</span>
+                    <strong id="device">—</strong>
+                </div>
+            </section>
+
+            <button type="button"
+                    id="clear-history"
+                    class="secondary-button">
+                Limpiar historial
+            </button>
+
+        </aside>
+
+        <!-- PANEL DE GENERACIÓN -->
+        <section class="chat-panel">
+
+            <div class="chat-header">
+                <div>
+                    <h2>Laboratorio de inferencia</h2>
+                    <p>Generación autoregresiva de texto</p>
+                </div>
+
+                <span class="model-badge">FASE 8</span>
+            </div>
+
+            <div class="messages" id="messages">
+
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">M</div>
+                    <h3>Bienvenido a MiniAI</h3>
+
+                    <p>
+                        Introduce un prompt para generar
+                        una continuación utilizando nuestro
+                        Transformer educativo.
+                    </p>
+
+                    <small>
+                        Ejemplos: "el perro", "la niña",
+                        "el gato"
+                    </small>
+                </div>
+
+            </div>
+
+            <form class="prompt-form" id="prompt-form">
+
+                <div class="input-container">
+                    <input type="text"
+                           id="prompt-input"
+                           placeholder="Escribe un prompt..."
+                           autocomplete="off"
+                           maxlength="500"
+                           required>
+
+                    <button type="submit" id="send-button">
+                        Generar →
+                    </button>
+                </div>
+
+                <p class="input-help">
+                    Vocabulario limitado a los tokens
+                    aprendidos durante la Fase 7.
+                </p>
+
+            </form>
+
+        </section>
+
+    </main>
+
+    <!-- MÉTRICAS -->
+    <footer class="footer">
+
+        <div>
+            <span class="footer-label">Estado:</span>
+            <span id="footer-status">Sin verificar</span>
+        </div>
+
+        <div>
+            <span class="footer-label">Latencia:</span>
+            <span id="latency">—</span>
+        </div>
+
+        <div>
+            <span class="footer-label">Motor:</span>
+            <span>PyTorch / MiniGPT</span>
+        </div>
+
+    </footer>
+
+</div>
+
+<script type="module" src="/assets/js/app.js"></script>
+
+</body>
+</html>

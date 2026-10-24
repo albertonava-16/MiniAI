@@ -6,9 +6,9 @@ La intención es tener una referencia rápida para retomar el proyecto después 
 
 **Último avance registrado:** 24 de octubre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 8, terminar la interfaz, ampliar pruebas HTTP y definir el acceso LAN.
+**Punto para retomar:** Fase 9, RAG y herramientas.
 
-Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4 a 7 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. En Fases 6 a 8 se distingue entre resultados compartidos por el autor y comprobaciones hechas al actualizar la documentación. No se volvieron a entrenar los modelos ni se midieron nuevos tiempos de GPU o uso de VRAM durante esta actualización. Las pruebas Python existentes no pudieron repetirse en el intérprete disponible porque no tiene PyTorch instalado.
+Las versiones y los resultados de GPU de las fases anteriores se conservan como registro. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. Para el cierre de Fase 8 se actualizaron los documentos según los resultados compartidos por el autor y se ejecutó `tests.test_api_http` contra el servidor disponible en `127.0.0.1:8000`; la prueba de salud, generación, token desconocido y parámetros inválidos terminó correctamente. No se volvió a entrenar MiniGPT ni se midieron nuevos benchmarks CUDA durante esta actualización. El acceso desde otro dispositivo en la LAN y las pruebas de interfaz fueron confirmados por el autor.
 
 Documentos relacionados: [plan de trabajo](01_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -31,7 +31,7 @@ Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas act
 - [Fase 5: Attention](#fase-5-attention)
 - [Fase 6: Transformer](#fase-6-transformer)
 - [Fase 7: Entrenamiento, generalización y generación](#fase-7-entrenamiento-generalización-y-generación)
-- [Fase 8: Servicio e inferencia modular](#fase-8-servicio-e-inferencia-modular)
+- [Fase 8: Servicio, interfaz e inferencia modular](#fase-8-servicio-interfaz-e-inferencia-modular)
 - [Primera prueba de GPU](#primera-prueba-de-gpu)
 - [Rutina para retomar el proyecto](#rutina-para-retomar-el-proyecto)
 - [Comandos de diagnóstico](#comandos-de-diagnóstico)
@@ -52,7 +52,7 @@ code .
 
 Confirmar que aparezca `(.venv)` al inicio de la terminal.
 
-La Fase 7 está completada y la Fase 8 está en progreso. La aplicación modular carga el modelo sin reentrenar y lo ofrece mediante una API local. El checkpoint histórico de Fase 7 está en la raíz del proyecto; la aplicación modular utiliza la copia ubicada en `models/`:
+Las Fases 7 y 8 están completadas. MiniAI Console y la API utilizan una aplicación modular que carga el modelo sin reentrenar. El checkpoint histórico de Fase 7 está en la raíz del proyecto; la aplicación modular utiliza la copia ubicada en `models/`:
 
 ```text
 models/miniai_fase7_checkpoint.pth
@@ -73,6 +73,14 @@ py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
 Abrir `http://127.0.0.1:8000/docs` para explorar los endpoints.
+
+La consola web está en `http://127.0.0.1:8000/`. El acceso desde otro dispositivo de la LAN se confirmó con el servidor escuchando en las interfaces de red:
+
+```bash
+py -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+No expongas esta API sin autenticación a Internet ni a redes no confiables.
 
 Para repasar el ejercicio de backpropagation de la Fase 2:
 
@@ -124,7 +132,8 @@ La fecha de corte del avance es el **24 de octubre de 2026**.
 | 5. Attention | Completada | Q/K/V, escalado, máscara causal, proyecciones entrenables y multi-head attention. |
 | 6. Transformer | Completada | Diez ejercicios: bloque Transformer, posiciones, apilado, entrenamiento, generación y persistencia de MiniGPT. |
 | 7. Entrenar MiniAI | Completada | Diez ejercicios: corpus ampliado, train/validation, batches, regularización, early stopping, BOS/EOS, sampling y checkpoint final. |
-| 8. Servicio | En progreso | Carga del checkpoint, generación modular y backend FastAPI local implementados; interfaz web y acceso LAN pendientes. |
+| 8. Servicio | Completada | Checkpoint e inferencia modular, API FastAPI, MiniAI Console, prueba HTTP automatizada y acceso confirmado desde otro equipo de la LAN. |
+| 9. RAG y herramientas | Siguiente fase | Recuperar documentos, agregar contexto al modelo y explorar la ejecución controlada de herramientas. |
 
 ### Avance de la Fase 1
 
@@ -235,7 +244,7 @@ La diferencia se nota en matrices grandes porque la GPU puede ejecutar muchas mu
 
 ### Punto para retomar
 
-La Fase 8 está en progreso. La [memoria de Fase 8](#fase-8-servicio-e-inferencia-modular) registra los módulos implementados y el punto para continuar.
+La Fase 8 está completada. La siguiente etapa es la [Fase 9: RAG y herramientas](01_Plan_de_Trabajo.md#fase-9-rag-y-herramientas).
 
 Partir del MiniGPT y el checkpoint de `src/fase6/09_checkpoint_completo.py` y `src/fase6/10_cargar_checkpoint.py`. Preparar un corpus más amplio, separar entrenamiento y validación, registrar pérdidas y generaciones, y conservar el estado del optimizador para reanudar el entrenamiento.
 
@@ -865,15 +874,15 @@ python src/fase7/10_checkpoint_fase7.py
 
 Los scripts 03–10 entrenan modelos nuevos de forma independiente; no continúan automáticamente desde el resultado anterior. El script 10 sobrescribe `miniai_fase7_checkpoint.pth`. No se registraron mediciones nuevas de tiempo, temperatura del hardware ni uso de VRAM.
 
-La Fase 7 queda cerrada. La [Fase 8](#fase-8-servicio-e-inferencia-modular) ya separó la arquitectura y la generación, carga el checkpoint sin reentrenar y ofrece generación mediante una API local.
+La Fase 7 queda cerrada. La [Fase 8](#fase-8-servicio-interfaz-e-inferencia-modular) extendió esa base con inferencia modular, API, interfaz web y acceso LAN.
 
 ---
 
-## Fase 8: Servicio e inferencia modular
+## Fase 8: Servicio, interfaz e inferencia modular
 
-**Estado:** en progreso. El backend FastAPI y la ruta de inferencia local están implementados; la interfaz web, las pruebas automatizadas HTTP ampliadas y el acceso desde la LAN siguen pendientes.
+**Estado:** completada. MiniAI pasó de ejercicios y scripts de inferencia independientes a una aplicación modular con carga del modelo, backend FastAPI, interfaz web y acceso confirmado desde la red local.
 
-La Fase 8 transforma los ejercicios de `src/faseN/` en componentes reutilizables sin mover ni reemplazar los ejercicios históricos. El código de entrenamiento permanece separado de la biblioteca de inferencia y del servicio HTTP.
+La Fase 8 transformó los ejercicios de `src/faseN/` en componentes reutilizables sin mover ni reemplazar los ejercicios históricos. El código de entrenamiento permanece separado de la biblioteca de inferencia, el servicio HTTP y la interfaz.
 
 ### Continuación de entrenamiento y checkpoint
 
@@ -893,10 +902,13 @@ Los ejercicios históricos de la Fase 8 incluyen `src/fase8/modelo.py`, `12_prob
 | `models/miniai_fase7_checkpoint.pth` | Copia del checkpoint de Fase 7 consumida por el cargador modular; se conserva el original de la raíz para los ejercicios anteriores. |
 | `tests/test_cargar_modelo.py` | Comprueba la carga y un forward del modelo sin entrenar. |
 | `tests/test_generacion.py` | Comprueba generación modular y el manejo de tokens desconocidos. |
+| `tests/test_api_http.py` | Prueba HTTP de salud, generación válida, token desconocido y validación de parámetros. |
 
 La reconstrucción reportada del checkpoint produjo logits con forma `(1, 1, 26)` y usó un vocabulario de 26 tokens. La generación modular reportada produjo ejemplos como `el perro juega con el niño` y `la niña corre por la cocina`. Son recombinaciones de patrones del corpus pequeño, no evidencia de comprensión general.
 
-La implementación modular corrigió top-p para conservar el token que cruza el umbral acumulado. Es una modificación de decodificación, no de pesos. Siguen pendientes pruebas automatizadas para sus casos límite. La tokenización continúa separando palabras por espacios; los tokens desconocidos causan un error controlado. El contexto sigue limitado a seis tokens y no hay memoria conversacional.
+La configuración de referencia es MiniGPT decoder-only, con 7,418 parámetros entrenables, 26 tokens, dos bloques Transformer y cuatro cabezas de atención por bloque. La ejecución de pruebas de esta actualización seleccionó CUDA en la NVIDIA RTX 5050. El validation loss de referencia continúa siendo `1.0344474554061889`, obtenido en Fase 7.
+
+La implementación modular corrigió top-p para conservar el token que cruza el umbral acumulado. Es una modificación de decodificación, no de pesos. Siguen pendientes pruebas unitarias específicas para sus casos límite. La tokenización continúa separando palabras por espacios; los tokens desconocidos causan un error controlado. El contexto sigue limitado a seis tokens y no hay memoria conversacional.
 
 ### Backend HTTP
 
@@ -907,29 +919,68 @@ La aplicación FastAPI modular se organiza así:
 | `backend/config.py` | Nombre y versión `0.2.0`, host `127.0.0.1`, puerto `8000` y valores predeterminados de generación. |
 | `backend/schemas/chat.py` | Modelos Pydantic `ChatRequest`, `ChatResponse` y `HealthResponse`; limita prompt a 1–500 caracteres, `max_tokens` a 1–64, temperature a `(0, 2]`, top-k a entero positivo o `None` y top-p a `(0, 1]`. |
 | `backend/routes/chat.py` | Endpoints `GET /health` y `POST /chat`, respuesta JSON, errores de validación controlados, registro de errores internos y medición de latencia. |
-| `backend/main.py` | Inicializa FastAPI, carga modelo/checkpoint/dispositivo en `lifespan` una sola vez por proceso y guarda los recursos en `app.state`. |
+| `backend/main.py` | Inicializa FastAPI, carga modelo/checkpoint/dispositivo en `lifespan` una sola vez por proceso y guarda los recursos en `app.state`; sirve la interfaz web en `/` y archivos estáticos bajo `/assets`. |
 
 Un `Lock` serializa las solicitudes de inferencia en esta etapa educativa. Cuando se usa CUDA, el backend sincroniza el dispositivo antes y después de generar; la duración se mide con `time.perf_counter()`. El error de entrada (incluidos tokens fuera del vocabulario) se responde con HTTP 422 y los fallos inesperados se registran y devuelven como HTTP 500. El endpoint de salud informa estado, nombre del modelo y dispositivo.
 
-Para ejecutar desde la raíz, con las dependencias instaladas:
+### MiniAI Console e integración navegador/API
+
+El frontend de una sola página se organiza en módulos:
+
+| Archivo | Responsabilidad |
+| --- | --- |
+| `frontend/index.html` | Estructura de MiniAI Console, controles de sampling, historial de mensajes e indicadores del modelo/servidor. |
+| `frontend/css/styles.css` | Presentación visual de la consola y reglas responsive para pantallas más estrechas. |
+| `frontend/js/app.js` | Coordina el formulario, los controles, la verificación de salud, la generación y el historial. |
+| `frontend/js/api.js` | Cliente HTTP con Fetch API para `/health` y `/chat`, y conversión de errores HTTP en mensajes de interfaz. |
+| `frontend/js/ui.js` | Actualiza DOM, mensajes, estados de carga/servidor y latencia. |
+
+FastAPI entrega la página raíz y monta los archivos frontend bajo `/assets`, por lo que la interfaz y la API se sirven desde el mismo origen. MiniAI Console ofrece sliders para temperature y top-p, controles para top-k y máximo de tokens, estado del servicio y dispositivo, latencia, historial y presentación de errores. El uso desde el navegador y el acceso desde otro dispositivo de la misma LAN fueron confirmados por el autor.
+
+Para ejecutar en el equipo local, desde la raíz y con las dependencias instaladas:
 
 ```bash
 py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Durante desarrollo se puede añadir `--reload`. La documentación interactiva está en `http://127.0.0.1:8000/docs`. El autor reportó una solicitud HTTP exitosa en Swagger para la API inicial y la validación local de la versión modular. Las primeras mediciones reportadas para la API inicial (cinco solicitudes) fueron promedio aproximado de 20.21 ms, mínimo 15.20 ms, máximo 32.37 ms y mediana 17.64 ms. Son mediciones de laboratorio de esa implementación inicial, no un benchmark de producción ni una medición de concurrencia; no se conservaron las latencias exactas de la validación modular más reciente.
+La consola está en `http://127.0.0.1:8000/` y Swagger en `http://127.0.0.1:8000/docs`. Durante desarrollo se puede añadir `--reload`.
 
-### Límites y punto para retomar
+Para aceptar conexiones desde una interfaz de red y probar en una LAN de confianza:
 
-- `frontend/` no contiene todavía una interfaz de usuario implementada.
-- La API escucha en `127.0.0.1`; el acceso LAN no está configurado ni probado y no hay autenticación para exposición externa.
-- El bloqueo simplifica el acceso concurrente al modelo, pero serializa las generaciones.
-- Las pruebas actuales no son pruebas de carga; faltan pruebas HTTP automatizadas y casos límite de top-p.
-- El vocabulario y el corpus son pequeños; MiniAI no es un modelo de propósito general ni conserva memoria de conversación.
-- Revisar y registrar las dependencias exactas del proyecto; actualmente no hay un `requirements.txt` en la estructura revisada.
-- Confirmar el tratamiento de archivos `.pth` y otros binarios en Git antes de distribuir el proyecto.
+```bash
+py -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
 
-Siguiente trabajo: terminar la interfaz sencilla, ampliar las pruebas del servicio y, antes de habilitar acceso LAN, definir las medidas de seguridad y exposición. El plan está en [Fase 8](01_Plan_de_Trabajo.md#fase-8-convertir-miniai-en-servicio); el vocabulario técnico, en el [breviario](00_breviario.md).
+El acceso LAN desde otro dispositivo se confirmó durante esta fase. La configuración local habitual usa `127.0.0.1`; la dirección `0.0.0.0` hace que el servidor escuche en las interfaces disponibles. La API no incluye autenticación, por lo que la prueba debe limitarse a una red de confianza y no debe exponerse a Internet.
+
+### Validación HTTP y latencia
+
+Comando para verificar la prueba automatizada, con el servidor ya iniciado en el puerto 8000:
+
+```bash
+py -m tests.test_api_http
+```
+
+Resultado verificado en esta actualización: `/health` devolvió correctamente; `/chat` generó una respuesta que comienza con el prompt y reportó latencia no negativa; tokens desconocidos y temperature inválida devolvieron HTTP 422 según lo esperado. La salida terminó con `PRUEBAS HTTP COMPLETADAS`.
+
+En una medición anterior de cinco solicitudes a la API inicial se registraron promedio aproximado de 20.21 ms, mínimo 15.20 ms, máximo 32.37 ms y mediana 17.64 ms. Son mediciones locales del laboratorio, no un benchmark de producción ni de concurrencia. No se conservaron las latencias exactas de la validación modular más reciente.
+
+### Deuda técnica y límites
+
+- Implementar excepciones de dominio en lugar de clasificar algunos errores mediante coincidencia de cadenas.
+- Añadir pruebas unitarias de casos límite top-p, concurrencia y carga.
+- Refinar UX/responsive y observabilidad según el uso.
+- Registrar y fijar las dependencias del proyecto.
+- Revisar la gestión del checkpoint y otros binarios en Git.
+- Añadir autenticación y controles de acceso antes de cualquier despliegue fuera de una LAN de confianza.
+- Capturar todos los estados aleatorios y del optimizador necesarios para una reproducibilidad completa del entrenamiento.
+- Mantener presente que el tokenizer solo separa por espacios, el vocabulario es de 26 tokens y el contexto máximo es de seis tokens. MiniAI es un Transformer educativo, no un asistente general ni un modelo con memoria conversacional.
+
+### Cierre y siguiente fase
+
+La prueba HTTP automatizada se ejecutó correctamente; junto con la carga/generación modular y la confirmación manual de la interfaz y del acceso LAN por el autor, se cumple el criterio de cierre de la Fase 8. Las mejoras listadas arriba son deuda técnica y trabajo posterior, no funcionalidades ya terminadas.
+
+El siguiente objetivo es la **Fase 9 — RAG y herramientas**: distinguir el conocimiento almacenado en los pesos de la información recuperada de documentos, estudiar embeddings e índice de búsqueda, incorporar contexto recuperado y ejecutar herramientas de forma controlada. MCP y la arquitectura distribuida permanecen para la Fase 10; la consolidación técnica y documental, para la Fase 11. Consulta el [plan de trabajo](01_Plan_de_Trabajo.md#fase-9-rag-y-herramientas) y el [breviario](00_breviario.md).
 
 ---
 
@@ -999,7 +1050,16 @@ MiniAI/
 │   └── miniai_fase7_checkpoint.pth
 ├── tests/
 │   ├── test_cargar_modelo.py
-│   └── test_generacion.py
+│   ├── test_generacion.py
+│   └── test_api_http.py
+├── frontend/
+│   ├── index.html
+│   ├── css/
+│   │   └── styles.css
+│   └── js/
+│       ├── app.js
+│       ├── api.js
+│       └── ui.js
 ├── documentation/
 │   └── code docs/
 │       ├── 00_breviario.md
