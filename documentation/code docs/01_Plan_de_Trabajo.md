@@ -5,9 +5,9 @@ Este documento organiza el recorrido de MiniAI: desde una neurona artificial has
 La intención es avanzar por fases, entender cada componente y registrar resultados antes de pasar al siguiente nivel.
 
 **Duración estimada total:** 44–60 horas, según la suma de las fases.  
-**Último avance registrado:** 1 de octubre de 2026.
+**Último avance registrado:** 24 de octubre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 8, separar la inferencia y exponer MiniAI como servicio.
+**Punto para retomar:** Fase 8, terminar la interfaz, ampliar pruebas HTTP y definir el acceso LAN.
 
 Documentos relacionados: [memoria técnica](02_Memoria_Tecnica.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -63,7 +63,7 @@ Cada fase incluye un objetivo, tareas, conceptos clave, un criterio de salida y 
 
 ## Estado actual y siguiente sesión
 
-El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **1 de octubre de 2026**.
+El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-para-retomar), cuyo último registro corresponde al **24 de octubre de 2026**.
 
 | Fase | Avance registrado |
 | --- | --- |
@@ -75,21 +75,16 @@ El avance se toma de la [memoria técnica](02_Memoria_Tecnica.md#avance-y-punto-
 | 5. Attention | Completada: siete ejercicios, máscara causal, proyecciones entrenables y dos cabezas con proyección final. |
 | 6. Transformer | Completada: diez ejercicios, MiniGPT entrenable, generación autoregresiva y persistencia con pesos, configuración y vocabulario. |
 | 7. Entrenar MiniAI | Completada: diez ejercicios con train/validation, batches, regularización, early stopping, BOS/EOS, sampling y checkpoint final. |
-| 8–11 | Pendientes en el registro de avance. |
+| 8. Servicio | En progreso: carga e inferencia modular y API local implementadas; interfaz web y acceso LAN pendientes. |
+| 9–11 | Pendientes en el registro de avance. |
 
 Los estados describen el avance documentado. La Fase 3 conserva el resultado observado del benchmark de matrices. La Fase 4 se registra como completada a partir de la confirmación del autor y la revisión de los siete archivos de `src/fase4`; no se aportaron valores exactos de pérdida ni tiempos de ejecución. La Fase 5 se cierra con la confirmación del autor, sus resultados de ejemplo y la revisión de los siete scripts de `src/fase5`; sus módulos de atención se ejecutan sin un ciclo de entrenamiento. La Fase 6 se cierra con el contexto y los resultados compartidos por el autor y la revisión de los diez scripts de `src/fase6`. La Fase 7 se cierra con la revisión de sus diez scripts y la última ejecución reportada por el autor; no se volvió a entrenar el modelo durante esta actualización documental.
 
-### Primera tarea al retomar
+### Punto para retomar
 
-Comenzar la [Fase 8](#fase-8-convertir-miniai-en-servicio) a partir del checkpoint final de Fase 7.
+Continuar la [Fase 8](#fase-8-convertir-miniai-en-servicio): completar una interfaz web sencilla, ampliar las pruebas HTTP y decidir cuándo habilitar acceso desde la red local. La implementación actual escucha en `127.0.0.1`; no se debe tratar como un servicio expuesto a la LAN.
 
-- [ ] Extraer las clases del modelo y la función de generación a módulos reutilizables.
-- [ ] Crear un cargador para `miniai_fase7_checkpoint.pth` que reconstruya el modelo sin entrenarlo.
-- [ ] Definir un endpoint de inferencia con FastAPI y un esquema de entrada/salida.
-- [ ] Validar prompts, parámetros de sampling y tokens desconocidos.
-- [ ] Medir latencia y comprobar una petición local de extremo a extremo.
-
-La ubicación del checkpoint final y el comando para reproducirlo están en [Inicio rápido de la memoria técnica](02_Memoria_Tecnica.md#inicio-rápido). La carga independiente sin reentrenar se implementará al comenzar la Fase 8.
+La carga modular y el uso de la API se describen en la [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular).
 
 ---
 
@@ -107,7 +102,7 @@ Los tiempos son estimaciones de dedicación por fase, no horas medidas ni fechas
 | 5 | Self-attention causal y multi-head attention | 5–6 h | Completada |
 | 6 | Transformer | 6–8 h | Completada |
 | 7 | Entrenamiento de MiniAI | 4–6 h | Completada |
-| 8 | API e interfaz | 3–4 h | Pendiente |
+| 8 | API e interfaz | 3–4 h | En progreso |
 | 9 | RAG y herramientas | 4–5 h | Pendiente |
 | 10 | MCP y arquitectura distribuida | 4–6 h | Pendiente |
 | 11 | Consolidación y documentación | 2–4 h | Pendiente |
@@ -671,13 +666,13 @@ El modelo se entrena con múltiples ejemplos, se evalúa en datos separados, con
 
 MiniAI pasó de memorizar una secuencia a aprender distribuciones sobre un corpus pequeño, medir generalización y generar continuaciones variadas. El checkpoint final conserva lo necesario para reconstruir inferencia junto con el código, pero no guarda `optimizer.state_dict()`, época ni estados aleatorios para reanudar exactamente el entrenamiento.
 
-La [Fase 8](#fase-8-convertir-miniai-en-servicio) separará la carga y la inferencia del script de entrenamiento y expondrá el modelo mediante una API.
+La [Fase 8](#fase-8-convertir-miniai-en-servicio) separó la carga y la generación del script de entrenamiento y ya ofrece el modelo mediante una API local; quedan pendientes la interfaz y el acceso LAN.
 
 ---
 
 ## Fase 8: Convertir MiniAI en servicio
 
-**Estado:** pendiente.  
+**Estado:** en progreso. El backend de inferencia local está implementado; la interfaz web y el acceso desde otro dispositivo en la LAN siguen pendientes.
 **Tiempo estimado:** 3–4 horas.
 
 ### Objetivo
@@ -686,33 +681,32 @@ Exponer el modelo como servicio para usarlo desde otras aplicaciones.
 
 ### Tareas
 
-- Crear una API con FastAPI.
-- Crear el endpoint `POST /chat`.
-- Cargar el modelo al iniciar.
-- Recibir un prompt y generar una respuesta.
-- Devolver JSON.
-- Añadir logs.
-- Manejar errores.
-- Crear una interfaz web sencilla.
-- Probar el acceso desde otro dispositivo en la red local (`LAN`).
+- [x] Crear una API modular con FastAPI y Uvicorn.
+- [x] Implementar `GET /health` y `POST /chat` con esquemas de solicitud y respuesta.
+- [x] Cargar el modelo y el checkpoint al iniciar el servidor, sin entrenar en cada solicitud.
+- [x] Recibir un prompt, aplicar los parámetros de generación y devolver JSON.
+- [x] Validar límites de entrada y devolver errores controlados para tokens desconocidos.
+- [x] Registrar errores y latencia de inferencia.
+- [x] Probar la carga modular y la generación; la validación HTTP local de la Fase 8 fue confirmada por el autor.
+- [ ] Crear una interfaz web sencilla.
+- [ ] Probar y configurar de forma segura el acceso desde otro dispositivo en la red local (`LAN`).
+- [ ] Ampliar las pruebas automatizadas de API y casos límite de top-p.
 
 ### Arquitectura conceptual
 
 ```text
-Cliente
+Cliente HTTP / Swagger
   ↓
-POST /chat
+FastAPI: GET /health, POST /chat
   ↓
-FastAPI
+Generación modular MiniAI
   ↓
-MiniAI
-  ↓
-Respuesta
+Respuesta JSON
 ```
 
 ### Conceptos clave
 
-API, servidor de inferencia (`inference server`), solicitud y respuesta (`request/response`), serialización, latencia y concurrencia.
+API, servidor de inferencia (`inference server`), solicitud y respuesta (`request/response`), serialización, validación, latencia, ciclo de vida de aplicación y concurrencia.
 
 ### Criterio de salida
 

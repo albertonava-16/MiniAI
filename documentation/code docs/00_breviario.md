@@ -4,7 +4,7 @@ Este documento reúne los conceptos aprendidos durante la construcción de MiniA
 
 La intención no es memorizar todas las definiciones, sino tener una referencia rápida que podamos ampliar conforme avance el proyecto.
 
-**Última ampliación:** 1 de octubre de 2026, [conceptos de la Fase 7](#fase-7-generalización-regularización-y-decodificación). También se conservan los conceptos de [Fase 4](#fase-4-del-texto-a-la-predicción), [Fase 5](#fase-5-attention-y-representaciones-contextualizadas) y [Fase 6](#fase-6-transformer-entrenamiento-y-persistencia). Los ejercicios, resultados y límites actuales están en la [memoria técnica](02_Memoria_Tecnica.md#fase-7-entrenamiento-generalización-y-generación).
+**Última ampliación:** 24 de octubre de 2026, [conceptos de la Fase 8](#conceptos-de-servicio-de-fase-8). También se conservan los conceptos de [Fase 4](#fase-4-del-texto-a-la-predicción), [Fase 5](#fase-5-attention-y-representaciones-contextualizadas), [Fase 6](#fase-6-transformer-entrenamiento-y-persistencia) y [Fase 7](#fase-7-generalización-regularización-y-decodificación). Los ejercicios, resultados y límites actuales están en la [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular).
 
 ---
 
@@ -1407,3 +1407,37 @@ Cambiar estas opciones no vuelve a entrenar el modelo ni añade conocimiento. Mo
 El checkpoint final reúne pesos, arquitectura, vocabulario, tokens especiales, métricas e hiperparámetros de generación. Esto permite reconstruir el modelo para inferencia junto con el código.
 
 Guardar el nombre `AdamW`, el learning rate y el weight decay no equivale a guardar `optimizer.state_dict()`. Para reanudar exactamente el entrenamiento también harían falta el estado del optimizador, la época o paso y los estados aleatorios pertinentes.
+
+---
+
+## Conceptos de servicio de Fase 8
+
+La [memoria técnica](02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular) describe cómo se aplican estos conceptos en MiniAI.
+
+**Compatibilidad de `state_dict`:** para cargar un checkpoint, la arquitectura debe esperar las mismas claves y dimensiones que están guardadas. Dos implementaciones matemáticamente equivalentes pueden tener nombres de parámetros incompatibles.
+
+**Carga estricta con `strict=True`:** `load_state_dict(..., strict=True)` exige que las claves esperadas por el modelo y las presentes en el checkpoint coincidan; hace visibles las diferencias en vez de ignorarlas.
+
+**Modo de evaluación con `eval()`:** configura el modelo para inferencia y desactiva comportamientos propios de entrenamiento, como dropout. No desactiva por sí solo el cálculo de gradientes.
+
+**`torch.inference_mode()`:** ejecuta operaciones que no necesitan autograd sin construir el grafo de gradientes, evitando trabajo innecesario en generación.
+
+**API HTTP:** interfaz de solicitudes y respuestas que permite invocar operaciones de un servicio desde un cliente. En esta fase, `GET /health` informa el estado del servidor y `POST /chat` solicita generación.
+
+**Endpoint:** combinación de una ruta y un método HTTP que representa una operación de la API, por ejemplo `POST /chat`.
+
+**FastAPI y Uvicorn:** FastAPI define la aplicación y sus endpoints; Uvicorn es el servidor ASGI que ejecuta la aplicación para recibir solicitudes.
+
+**Schema y Pydantic:** un schema define la forma y las restricciones de los datos de entrada o salida. Pydantic valida y convierte las solicitudes y respuestas según esos modelos.
+
+**Lifespan y `app.state`:** el ciclo de vida de FastAPI permite cargar recursos al iniciar el servidor; `app.state` conserva esos objetos para compartirlos entre solicitudes del mismo proceso.
+
+**Serialización JSON:** representación estructurada que permite enviar el prompt, los parámetros y la respuesta entre cliente y servidor.
+
+**Latencia de inferencia:** duración de la generación medida por el servidor. `time.perf_counter()` mide intervalos con alta resolución; CUDA puede ejecutar operaciones de forma asíncrona, por lo que sincronizar antes y después de la medición ayuda a contabilizar el trabajo GPU pendiente.
+
+**Concurrencia y `Lock`:** varias solicitudes pueden coincidir en el tiempo. Un `Lock` permite serializar el acceso a un recurso compartido; es una decisión de simplicidad, no una solución de escalado.
+
+**HTTP 422 y HTTP 500:** 422 indica que la solicitud no supera validación o una regla de entrada de la aplicación; 500 indica un fallo interno inesperado del servidor.
+
+**Separación de responsabilidades:** mantener arquitectura, carga del modelo, generación, API y presentación en módulos distintos permite reutilizar la inferencia sin mezclarla con el entrenamiento ni con el transporte HTTP.

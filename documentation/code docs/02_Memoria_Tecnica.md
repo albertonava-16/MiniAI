@@ -4,11 +4,11 @@ Este documento reúne la configuración del entorno, los comandos de trabajo y l
 
 La intención es tener una referencia rápida para retomar el proyecto después de reiniciar la computadora o al comenzar una nueva fase.
 
-**Último avance registrado:** 1 de octubre de 2026.
+**Último avance registrado:** 24 de octubre de 2026.
 **Reorganización de la documentación:** 19 de septiembre de 2026.  
-**Punto para retomar:** Fase 8, separar la inferencia y exponer MiniAI como servicio.
+**Punto para retomar:** Fase 8, terminar la interfaz, ampliar pruebas HTTP y definir el acceso LAN.
 
-Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4 a 7 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. En Fases 6 y 7 se documentan entrenamiento, generación y persistencia; las pérdidas y salidas numéricas proceden del contexto compartido por el autor. No se volvieron a entrenar los modelos al editar esta documentación; tampoco se midieron nuevos tiempos, uso de VRAM ni resultados de CUDA.
+Las versiones y los resultados de GPU se conservan como registro del entorno anterior. Las actualizaciones de Fases 4 a 7 recogen la ejecución y el cierre confirmados por el autor, su contexto de aprendizaje y la revisión del código. En Fase 5 se documenta el forward de módulos con parámetros entrenables; no se ejecuta un ciclo de entrenamiento. En Fases 6 a 8 se distingue entre resultados compartidos por el autor y comprobaciones hechas al actualizar la documentación. No se volvieron a entrenar los modelos ni se midieron nuevos tiempos de GPU o uso de VRAM durante esta actualización. Las pruebas Python existentes no pudieron repetirse en el intérprete disponible porque no tiene PyTorch instalado.
 
 Documentos relacionados: [plan de trabajo](01_Plan_de_Trabajo.md), [breviario de conceptos](00_breviario.md) y [README](../../README.md).
 
@@ -31,6 +31,7 @@ Documento convertido a partir de `MiniAI_Memoria_Tecnica.txt`. Las próximas act
 - [Fase 5: Attention](#fase-5-attention)
 - [Fase 6: Transformer](#fase-6-transformer)
 - [Fase 7: Entrenamiento, generalización y generación](#fase-7-entrenamiento-generalización-y-generación)
+- [Fase 8: Servicio e inferencia modular](#fase-8-servicio-e-inferencia-modular)
 - [Primera prueba de GPU](#primera-prueba-de-gpu)
 - [Rutina para retomar el proyecto](#rutina-para-retomar-el-proyecto)
 - [Comandos de diagnóstico](#comandos-de-diagnóstico)
@@ -51,10 +52,10 @@ code .
 
 Confirmar que aparezca `(.venv)` al inicio de la terminal.
 
-La Fase 7 está completada. El siguiente trabajo es separar la carga y la inferencia del entrenamiento para exponer MiniAI como servicio en Fase 8. El checkpoint final de Fase 7 se encuentra en la raíz del proyecto:
+La Fase 7 está completada y la Fase 8 está en progreso. La aplicación modular carga el modelo sin reentrenar y lo ofrece mediante una API local. El checkpoint histórico de Fase 7 está en la raíz del proyecto; la aplicación modular utiliza la copia ubicada en `models/`:
 
 ```text
-miniai_fase7_checkpoint.pth
+models/miniai_fase7_checkpoint.pth
 ```
 
 Para reproducir el entrenamiento final, las pruebas de top-p y el guardado del checkpoint:
@@ -63,7 +64,15 @@ Para reproducir el entrenamiento final, las pruebas de top-p y el guardado del c
 python src/fase7/10_checkpoint_fase7.py
 ```
 
-El script entrena un modelo nuevo, restaura los pesos con mejor validation loss, sobrescribe el checkpoint y genera muestras con distintos valores de top-p. El archivo permite reconstruir inferencia junto con el código, pero aún no existe un cargador independiente de Fase 7. Crear ese módulo reutilizable es la primera tarea de Fase 8.
+El script entrena un modelo nuevo, restaura los pesos con mejor validation loss, sobrescribe el checkpoint de la raíz y genera muestras con distintos valores de top-p. No lo ejecutes solo para iniciar el servicio: la aplicación usa el checkpoint existente y un cargador independiente.
+
+Para iniciar la API local, desde la raíz del proyecto:
+
+```bash
+py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Abrir `http://127.0.0.1:8000/docs` para explorar los endpoints.
 
 Para repasar el ejercicio de backpropagation de la Fase 2:
 
@@ -103,7 +112,7 @@ python src/fase3/07_matrices_cpu_vs_gpu.py
 
 ## Avance y punto para retomar
 
-La fecha de corte del avance es el **1 de octubre de 2026**.
+La fecha de corte del avance es el **24 de octubre de 2026**.
 
 | Fase | Estado registrado | Alcance |
 | --- | --- | --- |
@@ -115,7 +124,7 @@ La fecha de corte del avance es el **1 de octubre de 2026**.
 | 5. Attention | Completada | Q/K/V, escalado, máscara causal, proyecciones entrenables y multi-head attention. |
 | 6. Transformer | Completada | Diez ejercicios: bloque Transformer, posiciones, apilado, entrenamiento, generación y persistencia de MiniGPT. |
 | 7. Entrenar MiniAI | Completada | Diez ejercicios: corpus ampliado, train/validation, batches, regularización, early stopping, BOS/EOS, sampling y checkpoint final. |
-| 8. Servicio | Pendiente; siguiente fase | Separar carga e inferencia y exponer el modelo mediante una API. |
+| 8. Servicio | En progreso | Carga del checkpoint, generación modular y backend FastAPI local implementados; interfaz web y acceso LAN pendientes. |
 
 ### Avance de la Fase 1
 
@@ -226,7 +235,7 @@ La diferencia se nota en matrices grandes porque la GPU puede ejecutar muchas mu
 
 ### Punto para retomar
 
-La siguiente fase es la [Fase 8 del plan](01_Plan_de_Trabajo.md#fase-8-convertir-miniai-en-servicio): separar la inferencia y exponer MiniAI como servicio.
+La Fase 8 está en progreso. La [memoria de Fase 8](#fase-8-servicio-e-inferencia-modular) registra los módulos implementados y el punto para continuar.
 
 Partir del MiniGPT y el checkpoint de `src/fase6/09_checkpoint_completo.py` y `src/fase6/10_cargar_checkpoint.py`. Preparar un corpus más amplio, separar entrenamiento y validación, registrar pérdidas y generaciones, y conservar el estado del optimizador para reanudar el entrenamiento.
 
@@ -856,7 +865,71 @@ python src/fase7/10_checkpoint_fase7.py
 
 Los scripts 03–10 entrenan modelos nuevos de forma independiente; no continúan automáticamente desde el resultado anterior. El script 10 sobrescribe `miniai_fase7_checkpoint.pth`. No se registraron mediciones nuevas de tiempo, temperatura del hardware ni uso de VRAM.
 
-La Fase 7 queda cerrada. La siguiente tarea es la [Fase 8](01_Plan_de_Trabajo.md#fase-8-convertir-miniai-en-servicio): extraer la arquitectura y la inferencia a módulos reutilizables, cargar el checkpoint sin reentrenar y ofrecer generación mediante una API.
+La Fase 7 queda cerrada. La [Fase 8](#fase-8-servicio-e-inferencia-modular) ya separó la arquitectura y la generación, carga el checkpoint sin reentrenar y ofrece generación mediante una API local.
+
+---
+
+## Fase 8: Servicio e inferencia modular
+
+**Estado:** en progreso. El backend FastAPI y la ruta de inferencia local están implementados; la interfaz web, las pruebas automatizadas HTTP ampliadas y el acceso desde la LAN siguen pendientes.
+
+La Fase 8 transforma los ejercicios de `src/faseN/` en componentes reutilizables sin mover ni reemplazar los ejercicios históricos. El código de entrenamiento permanece separado de la biblioteca de inferencia y del servicio HTTP.
+
+### Continuación de entrenamiento y checkpoint
+
+`src/fase8/11_continuar_entrenamiento.py` retomó experimentalmente el checkpoint de Fase 7. La validación inicial fue `1.0344474554061889`. En el entrenamiento adicional reportado, train loss bajó mientras validation loss aumentó; el early stopping detuvo la ejecución en el epoch 80. El mejor validation loss siguió siendo el del modelo original de Fase 7 y el mejor epoch adicional quedó registrado como `-1`, que representa el checkpoint inicial.
+
+Se corrigió la captura del checkpoint de entrenamiento para copiar conjuntamente el mejor estado del modelo y el estado del optimizador con `copy.deepcopy()`, y restaurarlos antes de guardar `src/fase8/miniai_training_checkpoint.pth`. El checkpoint original de Fase 7 no contenía el estado de AdamW: si se conserva el modelo inicial, el estado de optimizador asociado es uno recién inicializado, no el estado real de la Fase 7. Tampoco se guardaron todos los estados aleatorios necesarios para afirmar que la continuación sea reproducible exactamente.
+
+### Arquitectura, carga y generación
+
+Los ejercicios históricos de la Fase 8 incluyen `src/fase8/modelo.py`, `12_probar_modelo.py`, `generar.py` y `api.py`. La aplicación modular que reutiliza el checkpoint vive en los paquetes de la raíz:
+
+| Archivo | Responsabilidad |
+| --- | --- |
+| `miniai/modelo.py` | Define `AttentionHead`, `MultiHeadAttention`, `FeedForward`, `TransformerBlock` y `MiniGPT`, conservando nombres internos compatibles con el `state_dict` de Fase 7. |
+| `miniai/inferencia.py` | Resuelve el checkpoint con `pathlib`, elige CUDA si está disponible o CPU en caso contrario, reconstruye la arquitectura y carga pesos con `strict=True`; termina en modo `eval()`. |
+| `miniai/generacion.py` | Implementa `seleccionar_token()` y `generar()`, con `torch.inference_mode()`, contexto limitado, tokens BOS/EOS y temperature, top-k y top-p. |
+| `models/miniai_fase7_checkpoint.pth` | Copia del checkpoint de Fase 7 consumida por el cargador modular; se conserva el original de la raíz para los ejercicios anteriores. |
+| `tests/test_cargar_modelo.py` | Comprueba la carga y un forward del modelo sin entrenar. |
+| `tests/test_generacion.py` | Comprueba generación modular y el manejo de tokens desconocidos. |
+
+La reconstrucción reportada del checkpoint produjo logits con forma `(1, 1, 26)` y usó un vocabulario de 26 tokens. La generación modular reportada produjo ejemplos como `el perro juega con el niño` y `la niña corre por la cocina`. Son recombinaciones de patrones del corpus pequeño, no evidencia de comprensión general.
+
+La implementación modular corrigió top-p para conservar el token que cruza el umbral acumulado. Es una modificación de decodificación, no de pesos. Siguen pendientes pruebas automatizadas para sus casos límite. La tokenización continúa separando palabras por espacios; los tokens desconocidos causan un error controlado. El contexto sigue limitado a seis tokens y no hay memoria conversacional.
+
+### Backend HTTP
+
+La aplicación FastAPI modular se organiza así:
+
+| Archivo | Responsabilidad |
+| --- | --- |
+| `backend/config.py` | Nombre y versión `0.2.0`, host `127.0.0.1`, puerto `8000` y valores predeterminados de generación. |
+| `backend/schemas/chat.py` | Modelos Pydantic `ChatRequest`, `ChatResponse` y `HealthResponse`; limita prompt a 1–500 caracteres, `max_tokens` a 1–64, temperature a `(0, 2]`, top-k a entero positivo o `None` y top-p a `(0, 1]`. |
+| `backend/routes/chat.py` | Endpoints `GET /health` y `POST /chat`, respuesta JSON, errores de validación controlados, registro de errores internos y medición de latencia. |
+| `backend/main.py` | Inicializa FastAPI, carga modelo/checkpoint/dispositivo en `lifespan` una sola vez por proceso y guarda los recursos en `app.state`. |
+
+Un `Lock` serializa las solicitudes de inferencia en esta etapa educativa. Cuando se usa CUDA, el backend sincroniza el dispositivo antes y después de generar; la duración se mide con `time.perf_counter()`. El error de entrada (incluidos tokens fuera del vocabulario) se responde con HTTP 422 y los fallos inesperados se registran y devuelven como HTTP 500. El endpoint de salud informa estado, nombre del modelo y dispositivo.
+
+Para ejecutar desde la raíz, con las dependencias instaladas:
+
+```bash
+py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Durante desarrollo se puede añadir `--reload`. La documentación interactiva está en `http://127.0.0.1:8000/docs`. El autor reportó una solicitud HTTP exitosa en Swagger para la API inicial y la validación local de la versión modular. Las primeras mediciones reportadas para la API inicial (cinco solicitudes) fueron promedio aproximado de 20.21 ms, mínimo 15.20 ms, máximo 32.37 ms y mediana 17.64 ms. Son mediciones de laboratorio de esa implementación inicial, no un benchmark de producción ni una medición de concurrencia; no se conservaron las latencias exactas de la validación modular más reciente.
+
+### Límites y punto para retomar
+
+- `frontend/` no contiene todavía una interfaz de usuario implementada.
+- La API escucha en `127.0.0.1`; el acceso LAN no está configurado ni probado y no hay autenticación para exposición externa.
+- El bloqueo simplifica el acceso concurrente al modelo, pero serializa las generaciones.
+- Las pruebas actuales no son pruebas de carga; faltan pruebas HTTP automatizadas y casos límite de top-p.
+- El vocabulario y el corpus son pequeños; MiniAI no es un modelo de propósito general ni conserva memoria de conversación.
+- Revisar y registrar las dependencias exactas del proyecto; actualmente no hay un `requirements.txt` en la estructura revisada.
+- Confirmar el tratamiento de archivos `.pth` y otros binarios en Git antes de distribuir el proyecto.
+
+Siguiente trabajo: terminar la interfaz sencilla, ampliar las pruebas del servicio y, antes de habilitar acceso LAN, definir las medidas de seguridad y exposición. El plan está en [Fase 8](01_Plan_de_Trabajo.md#fase-8-convertir-miniai-en-servicio); el vocabulario técnico, en el [breviario](00_breviario.md).
 
 ---
 
@@ -911,6 +984,22 @@ Archivos de trabajo y documentación:
 
 ```text
 MiniAI/
+├── backend/
+│   ├── config.py
+│   ├── main.py
+│   ├── routes/
+│   │   └── chat.py
+│   └── schemas/
+│       └── chat.py
+├── miniai/
+│   ├── modelo.py
+│   ├── inferencia.py
+│   └── generacion.py
+├── models/
+│   └── miniai_fase7_checkpoint.pth
+├── tests/
+│   ├── test_cargar_modelo.py
+│   └── test_generacion.py
 ├── documentation/
 │   └── code docs/
 │       ├── 00_breviario.md
@@ -959,7 +1048,7 @@ MiniAI/
 │   │   ├── 08_cargar_modelo.py
 │   │   ├── 09_checkpoint_completo.py
 │   │   └── 10_cargar_checkpoint.py
-│   └── fase7/
+│   ├── fase7/
 │       ├── 01_preparar_dataset.py
 │       ├── 02_crear_batches.py
 │       ├── 03_entrenar_con_batches.py
@@ -970,6 +1059,12 @@ MiniAI/
 │       ├── 08_sampling_temperature_topk.py
 │       ├── 09_top_p_sampling.py
 │       └── 10_checkpoint_fase7.py
+│   └── fase8/
+│       ├── 11_continuar_entrenamiento.py
+│       ├── 12_probar_modelo.py
+│       ├── api.py
+│       ├── generar.py
+│       └── modelo.py
 ├── .venv/
 ├── .gitignore
 └── README.md

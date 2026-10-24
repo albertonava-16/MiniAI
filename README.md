@@ -16,7 +16,7 @@ El proyecto avanza desde la matemática fundamental hasta una arquitectura capaz
 
 ## Estado actual
 
-Avance registrado al 1 de octubre de 2026, según la memoria técnica, los scripts del repositorio y los resultados compartidos por el autor:
+Avance registrado al 24 de octubre de 2026, según la memoria técnica, los archivos del repositorio y los resultados compartidos por el autor:
 
 - **Fase 0 - Laboratorio:** completada según las pruebas previas del entorno.
 - **Fase 1 - Neurona artificial:** implementados los ejercicios de neurona básica, entrenamiento de AND y frontera de decisión.
@@ -26,7 +26,7 @@ Avance registrado al 1 de octubre de 2026, según la memoria técnica, los scrip
 - **Fase 5 - Attention:** completada con siete ejercicios, desde atención para un token hasta Multi-Head Causal Self-Attention con dos cabezas y proyección de salida.
 - **Fase 6 - Transformer:** completada con diez ejercicios: bloques con atención causal, embeddings posicionales, entrenamiento de MiniGPT, generación autoregresiva y recuperación desde un checkpoint.
 - **Fase 7 - Entrenar MiniAI:** completada con diez ejercicios: corpus de múltiples oraciones, train/validation, mini-batches, atención con dimensión batch, regularización, early stopping, BOS/EOS y generación mediante temperature, top-k y top-p.
-- **Siguiente paso:** comenzar la Fase 8 y separar la inferencia del entrenamiento para exponer el modelo mediante una API.
+- **Fase 8 - Servicio:** en progreso. La carga del checkpoint, la generación modular y el backend FastAPI están implementados. La interfaz web y el acceso desde otro dispositivo en la red local siguen pendientes.
 
 ## Documentación
 
@@ -38,25 +38,27 @@ Los documentos siguen un formato común en Markdown, con secciones, ejemplos y e
 
 La memoria técnica y el plan se convirtieron de texto plano a Markdown. Las próximas actualizaciones se registrarán en estos archivos `.md`.
 
-## Arquitectura objetivo
+## Arquitectura actual
+
+La aplicación modular separa el backend HTTP de la biblioteca de inferencia. El servidor carga el checkpoint una vez al iniciar y reutiliza el modelo para las solicitudes. La interfaz web todavía no está implementada.
 
 ```text
-Usuario
-  |
-Chat / interfaz
-  |
-FastAPI
-  |
-MiniAI
-  |
-Transformer
-  |
-PyTorch / CUDA
-  |
-GPU local
+Cliente HTTP / Swagger
+        |
+        v
+backend/main.py
+        |
+        v
+backend/routes/chat.py
+        |
+        v
+miniai/generacion.py
+        |
+        v
+MiniGPT + PyTorch / CUDA o CPU
 ```
 
-En fases posteriores se añadiran RAG, tools y MCP:
+La carga inicial usa `miniai/inferencia.py` y `models/miniai_fase7_checkpoint.pth`. RAG, tools y MCP son trabajo de fases posteriores:
 
 ```text
 MiniAI
@@ -69,6 +71,11 @@ MiniAI
 
 ```text
 MiniAI/
+|-- backend/                  # Aplicación FastAPI, rutas, esquemas y configuración
+|-- miniai/                   # Arquitectura, carga de checkpoint y generación
+|-- models/                   # Checkpoint usado por la aplicación modular
+|-- tests/                    # Pruebas de carga y generación
+|-- frontend/                 # Estructura CSS/JS; interfaz aún no implementada
 |-- documentation/            # Plan, memoria técnica y breviario
 |   `-- code docs/
 |       |-- 00_breviario.md
@@ -117,21 +124,29 @@ MiniAI/
 |   |   |-- 08_cargar_modelo.py
 |   |   |-- 09_checkpoint_completo.py
 |   |   `-- 10_cargar_checkpoint.py
-|   `-- fase7/
-|       |-- 01_preparar_dataset.py
-|       |-- 02_crear_batches.py
-|       |-- 03_entrenar_con_batches.py
-|       |-- 04_mas_datos.py
-|       |-- 05_entrenamiento_regularizado.py
-|       |-- 06_probar_generacion.py
-|       |-- 07_tokens_especiales.py
-|       |-- 08_sampling_temperature_topk.py
-|       |-- 09_top_p_sampling.py
-|       `-- 10_checkpoint_fase7.py
+|   |-- fase7/
+|   |   |-- 01_preparar_dataset.py
+|   |   |-- 02_crear_batches.py
+|   |   |-- 03_entrenar_con_batches.py
+|   |   |-- 04_mas_datos.py
+|   |   |-- 05_entrenamiento_regularizado.py
+|   |   |-- 06_probar_generacion.py
+|   |   |-- 07_tokens_especiales.py
+|   |   |-- 08_sampling_temperature_topk.py
+|   |   |-- 09_top_p_sampling.py
+|   |   `-- 10_checkpoint_fase7.py
+|   `-- fase8/
+|       |-- 11_continuar_entrenamiento.py
+|       |-- 12_probar_modelo.py
+|       |-- api.py
+|       |-- generar.py
+|       `-- modelo.py
 |-- .venv/                    # Entorno virtual local, no versionar
 |-- .gitignore
 `-- README.md
 ```
+
+Los ejercicios históricos de Fase 8 siguen en `src/fase8/`; la aplicación reutilizable vive en `backend/` y `miniai/`. `frontend/` no tiene todavía una interfaz implementada.
 
 ## Requisitos
 
@@ -154,6 +169,12 @@ python -m venv .venv
 source .venv/Scripts/activate
 python -m pip install --upgrade pip
 pip install numpy matplotlib
+```
+
+El backend requiere FastAPI y Uvicorn, además de PyTorch para cargar el modelo. Si FastAPI o Uvicorn no están instalados en el entorno:
+
+```bash
+pip install fastapi uvicorn
 ```
 
 Para instalar PyTorch con CUDA, usa el indice correspondiente a tu hardware y a la version disponible en la [pagina oficial de PyTorch](https://pytorch.org/get-started/locally/). La instalacion utilizada durante la fase 0 fue:
@@ -308,6 +329,24 @@ El script 10 guarda `miniai_fase7_checkpoint.pth` en el directorio desde el que 
 
 El detalle de los experimentos y de los diez scripts está en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-7-entrenamiento-generalización-y-generación).
 
+## Ejecutar el backend de Fase 8
+
+Desde la raíz del repositorio, con el entorno virtual activo:
+
+```bash
+py -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Para desarrollo con recarga automática:
+
+```bash
+py -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+La documentación interactiva de la API está en <http://127.0.0.1:8000/docs>. Los endpoints implementados son `GET /health` y `POST /chat`. El backend carga el modelo durante el arranque; la primera solicitud no entrena ni vuelve a cargar el checkpoint. El servicio está configurado para `127.0.0.1`, no para exposición en la LAN.
+
+El detalle de módulos, validaciones, limitaciones y pruebas está en la [memoria técnica](documentation/code%20docs/02_Memoria_Tecnica.md#fase-8-servicio-e-inferencia-modular).
+
 ## Roadmap
 
 | Fase | Tema | Estado |
@@ -320,7 +359,7 @@ El detalle de los experimentos y de los diez scripts está en la [memoria técni
 | 5 | Self-attention causal y multi-head attention | Completada |
 | 6 | Construir un Transformer pequeño | Completada |
 | 7 | Entrenar MiniAI | Completada |
-| 8 | Convertir MiniAI en servicio | Pendiente |
+| 8 | Convertir MiniAI en servicio | En progreso |
 | 9 | RAG y tools | Pendiente |
 | 10 | MCP y arquitectura distribuida | Pendiente |
 | 11 | Consolidación y documentación | Pendiente |
